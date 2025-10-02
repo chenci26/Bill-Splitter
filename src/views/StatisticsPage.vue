@@ -84,7 +84,7 @@
 
     <!-- 總結卡片 -->
     <el-row :gutter="20" class="summary-cards">
-      <el-col :span="8">
+      <el-col :xs="24" :sm="8" :md="8">
         <el-card class="summary-card">
           <div class="summary-content">
             <div class="summary-title">總支出</div>
@@ -94,7 +94,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="8">
+      <el-col :xs="24" :sm="8" :md="8">
         <el-card class="summary-card">
           <div class="summary-content">
             <div class="summary-title">參與人數</div>
@@ -104,7 +104,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="8">
+      <el-col :xs="24" :sm="8" :md="8">
         <el-card class="summary-card">
           <div class="summary-content">
             <div class="summary-title">項目總數</div>
@@ -484,6 +484,19 @@ const exportData = () => {
   .total-stats {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+  
+  /* 總結卡片調整 */
+  .summary-cards {
+    margin-bottom: 20px;
+  }
+  
+  .summary-cards .el-col {
+    margin-bottom: 12px;
+  }
+  
+  .summary-cards .el-col:last-child {
+    margin-bottom: 0;
   }
   
   /* 表格水平滾動 */

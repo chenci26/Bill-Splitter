@@ -1,10 +1,11 @@
 <template>
   <el-dialog
     v-model="visible"
-    width="400px"
+    :width="dialogWidth"
     :close-on-click-modal="false"
     :close-on-press-escape="false"
     :show-close="false"
+    class="auth-dialog"
   >
     <template #header>
       <div class="auth-header">
@@ -89,6 +90,16 @@ const emit = defineEmits<Emits>()
 const visible = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
+})
+
+// 響應式 Dialog 寬度
+const dialogWidth = computed(() => {
+  if (typeof window === 'undefined') return '360px'
+  const width = window.innerWidth
+  if (width <= 375) return '92%'
+  if (width <= 480) return '90%'
+  if (width <= 768) return '85%'
+  return '360px'  // 電腦版縮小為 360px
 })
 
 // 監聽對話框顯示狀態，重置為登入模式
@@ -223,23 +234,162 @@ const handleSubmit = async () => {
   align-items: center;
 }
 
+/* 電腦版表單優化 */
+@media (min-width: 769px) {
+  :deep(.el-form-item__label) {
+    width: 70px !important;
+  }
+  
+  :deep(.el-form-item__content) {
+    flex: 1;
+  }
+  
+  :deep(.el-input) {
+    width: 100%;
+  }
+}
+
 /* RWD 響應式設計 */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
+  .auth-header {
+    padding: 8px 0;
+  }
+  
   .auth-title {
-    font-size: 22px;
+    font-size: 24px;
   }
   
   .auth-subtitle {
     font-size: 13px;
   }
   
+  :deep(.el-form-item__label) {
+    font-size: 14px;
+    min-width: 70px;
+  }
+  
+  :deep(.el-input__inner) {
+    font-size: 14px;
+  }
+  
   .dialog-footer {
     flex-direction: column-reverse;
-    gap: 10px;
+    gap: 8px;
+    margin-top: 15px;
   }
   
   .dialog-footer .el-button {
     width: 100%;
+    margin: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Dialog 本身調整 */
+  .auth-dialog :deep(.el-dialog) {
+    width: 90% !important;
+    max-width: 340px !important;
+    margin: 5vh auto !important;
+  }
+  
+  .auth-dialog :deep(.el-dialog__header) {
+    padding: 12px 15px 8px !important;
+  }
+  
+  .auth-dialog :deep(.el-dialog__body) {
+    padding: 15px !important;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  
+  .auth-dialog :deep(.el-dialog__footer) {
+    padding: 10px 15px 15px !important;
+  }
+  
+  .auth-header {
+    padding: 0;
+  }
+  
+  .auth-title {
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+  
+  .auth-subtitle {
+    font-size: 12px;
+    margin-top: 4px;
+  }
+  
+  :deep(.el-form) {
+    margin-top: 5px;
+  }
+  
+  :deep(.el-form-item) {
+    margin-bottom: 14px;
+  }
+  
+  :deep(.el-form-item__label) {
+    font-size: 13px;
+    min-width: 55px;
+    padding-right: 8px;
+  }
+  
+  :deep(.el-input__wrapper) {
+    padding: 6px 10px;
+  }
+  
+  :deep(.el-input__inner) {
+    font-size: 13px;
+    height: 32px;
+    line-height: 32px;
+  }
+  
+  :deep(.el-button) {
+    padding: 10px 15px;
+    font-size: 14px;
+    height: 38px;
+  }
+  
+  .dialog-footer {
+    gap: 8px;
+    margin-top: 5px;
+  }
+}
+
+/* 更小的螢幕 (iPhone SE 等) */
+@media (max-width: 375px) {
+  .auth-dialog :deep(.el-dialog) {
+    width: 92% !important;
+    max-width: 350px !important;
+    margin: 3vh auto !important;
+  }
+  
+  .auth-dialog :deep(.el-dialog__body) {
+    padding: 12px !important;
+    max-height: 75vh;
+  }
+  
+  .auth-title {
+    font-size: 18px;
+  }
+  
+  :deep(.el-form-item) {
+    margin-bottom: 12px;
+  }
+  
+  :deep(.el-form-item__label) {
+    font-size: 12px;
+    min-width: 50px;
+  }
+  
+  :deep(.el-input__inner) {
+    font-size: 12px;
+  }
+  
+  :deep(.el-button) {
+    padding: 8px 12px;
+    font-size: 13px;
+    height: 36px;
   }
 }
 </style>

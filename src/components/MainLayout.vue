@@ -188,15 +188,29 @@ const showLoginDialog = () => {
 }
 
 :deep(.el-tabs__item.is-active) {
-  color: #409EFF;
-  background-color: white;
+  color: #409EFF !important;
+  background-color: white !important;
   border-radius: 4px 4px 0 0;
+}
+
+:deep(.el-tabs__item.is-active:focus) {
+  color: #409EFF !important;
+  background-color: white !important;
 }
 
 :deep(.el-tabs__item:hover) {
   color: #409EFF;
   background-color: rgba(255, 255, 255, 0.1);
   border-radius: 4px 4px 0 0;
+}
+
+:deep(.el-tabs__item:focus) {
+  outline: none;
+}
+
+:deep(.el-tabs__item:active) {
+  color: #409EFF !important;
+  background-color: white !important;
 }
 
 :deep(.el-tabs__active-bar) {
@@ -253,6 +267,26 @@ const showLoginDialog = () => {
     line-height: 36px;
   }
   
+  :deep(.el-tabs__item.is-active) {
+    color: #409EFF !important;
+    background-color: white !important;
+  }
+  
+  :deep(.el-tabs__item.is-active:focus) {
+    color: #409EFF !important;
+    background-color: white !important;
+  }
+  
+  :deep(.el-tabs__item:focus) {
+    outline: none;
+    color: white;
+  }
+  
+  :deep(.el-tabs__item:active) {
+    color: #409EFF !important;
+    background-color: white !important;
+  }
+  
   :deep(.el-tabs__nav-wrap) {
     height: 50px;
   }
@@ -283,6 +317,26 @@ const showLoginDialog = () => {
     min-width: 70px;
     height: 32px;
     line-height: 32px;
+  }
+  
+  :deep(.el-tabs__item.is-active) {
+    color: #409EFF !important;
+    background-color: white !important;
+  }
+  
+  :deep(.el-tabs__item.is-active:focus) {
+    color: #409EFF !important;
+    background-color: white !important;
+  }
+  
+  :deep(.el-tabs__item:focus) {
+    outline: none;
+    color: white;
+  }
+  
+  :deep(.el-tabs__item:active) {
+    color: #409EFF !important;
+    background-color: white !important;
   }
   
   :deep(.el-tabs__nav-wrap) {

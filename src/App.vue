@@ -67,22 +67,28 @@ const toggleTestConnection = () => {
 
 html {
   width: 100%;
+  max-width: 100vw;
   height: 100%;
+  overflow-x: hidden;
 }
 
 body {
   width: 100%;
+  max-width: 100vw;
   min-height: 100%;
   font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
   line-height: 1.5;
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
 #app {
   width: 100%;
+  max-width: 100vw;
   height: 100vh;
   display: block;
   overflow: hidden;
+  position: relative;
 }
 
 /* 確保所有容器都是滿版 */
@@ -108,6 +114,25 @@ body {
 :deep(.el-table__header-wrapper),
 :deep(.el-table__body-wrapper) {
   width: 100% !important;
+}
+
+/* Element Plus Dialog 全局修復 */
+:deep(.el-overlay) {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 2000 !important;
+}
+
+:deep(.el-dialog) {
+  --el-dialog-width: min(450px, calc(100vw - 40px)) !important;
+  width: var(--el-dialog-width) !important;
+  max-width: calc(100vw - 40px) !important;
+  margin: 15vh auto !important;
 }
 
 /* RWD 響應式設計 */
@@ -160,13 +185,27 @@ body {
   }
   
   /* Dialog 調整 */
+  :deep(.el-overlay) {
+    position: fixed !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+  
   :deep(.el-dialog) {
-    width: 95% !important;
-    margin: 20px auto !important;
+    --el-dialog-width: 90% !important;
+    width: 90% !important;
+    max-width: calc(100vw - 30px) !important;
+    margin: 5vh auto !important;
   }
   
   :deep(.el-dialog__body) {
     padding: 15px;
+    max-height: 70vh;
+    overflow-y: auto;
   }
   
   /* Tag 標籤調整 */
@@ -202,9 +241,23 @@ body {
     font-size: 12px;
   }
   
+  :deep(.el-overlay) {
+    position: fixed !important;
+    width: 100vw !important;
+    height: 100vh !important;
+  }
+  
   :deep(.el-dialog) {
-    width: 98% !important;
-    margin: 10px auto !important;
+    --el-dialog-width: 92% !important;
+    width: 92% !important;
+    max-width: calc(100vw - 20px) !important;
+    margin: 3vh auto !important;
+  }
+  
+  :deep(.el-dialog__body) {
+    padding: 12px;
+    max-height: 75vh;
+    overflow-y: auto;
   }
   
   :deep(.el-table) {

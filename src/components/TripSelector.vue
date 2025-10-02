@@ -580,10 +580,29 @@ watch(() => authStore.isAuthenticated, (isAuthenticated) => {
     width: 100%;
     flex-direction: column;
     gap: 8px;
+    align-items: stretch;
   }
   
   .header-buttons .el-button {
     width: 100%;
+    justify-content: center;
+    margin: 0 !important; /* 移除所有 margin */
+  }
+  
+  .header-buttons :deep(.el-tooltip__trigger) {
+    width: 100%;
+    display: block;
+  }
+  
+  .header-buttons .el-tooltip {
+    width: 100%;
+    display: block;
+  }
+  
+  .header-buttons .el-tooltip .el-button {
+    width: 100%;
+    display: block;
+    margin: 0 !important; /* 移除所有 margin */
   }
   
   /* 旅程詳情調整 */
