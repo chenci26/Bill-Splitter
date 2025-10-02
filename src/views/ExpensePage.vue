@@ -109,16 +109,9 @@
         </el-form-item>
         <el-form-item label="金額" required>
           <div class="amount-input-group">
-            <el-input-number
-              v-model="formData.originalAmount"
-              :min="0"
-              :precision="2"
-              style="flex: 1; margin-right: 10px;"
-              @input="calculateAmount"
-            />
             <el-select
               v-model="formData.currency"
-              style="width: 120px;"
+              style="width: 120px; margin-right: 10px;"
               @change="calculateAmount"
             >
               <el-option
@@ -128,6 +121,13 @@
                 :value="currency.id"
               />
             </el-select>
+            <el-input-number
+              v-model="formData.originalAmount"
+              :min="0"
+              :precision="2"
+              style="flex: 1;"
+              @input="calculateAmount"
+            />
           </div>
           <div class="twd-amount-display" v-if="formData.originalAmount && formData.currency">
             <small>台幣金額：NT${{ formData.amount.toFixed(2) }}</small>
