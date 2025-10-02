@@ -295,7 +295,7 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { useExpenseStore, type ExpenseItem } from '../stores/expenseStore'
 import { Plus } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 
 const store = useExpenseStore()
@@ -391,8 +391,22 @@ const editExpense = (expense: ExpenseItem) => {
   showAddDialog.value = true
 }
 
-const deleteExpense = (id: string) => {
-  store.deleteExpense(id)
+const deleteExpense = async (id: string) => {
+  try {
+    await ElMessageBox.confirm(
+      '確定要刪除這筆記錄嗎？此操作無法復原。',
+      '確認刪除',
+      {
+        confirmButtonText: '確定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+    store.deleteExpense(id)
+    ElMessage.success('記錄已刪除')
+  } catch {
+    // 用戶取消刪除，不做任何操作
+  }
 }
 
 const saveExpense = () => {
@@ -449,9 +463,22 @@ const addPerson = () => {
   ElMessage.success('人員新增成功')
 }
 
-const deletePerson = (id: string) => {
-  store.deletePerson(id)
-  ElMessage.success('人員刪除成功')
+const deletePerson = async (id: string) => {
+  try {
+    await ElMessageBox.confirm(
+      '確定要刪除這個人員嗎？相關的費用記錄將被保留。',
+      '確認刪除',
+      {
+        confirmButtonText: '確定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+    store.deletePerson(id)
+    ElMessage.success('人員刪除成功')
+  } catch {
+    // 用戶取消刪除，不做任何操作
+  }
 }
 
 const addCategory = () => {
@@ -465,9 +492,22 @@ const addCategory = () => {
   ElMessage.success('分類新增成功')
 }
 
-const deleteCategory = (id: string) => {
-  store.deleteCategory(id)
-  ElMessage.success('分類刪除成功')
+const deleteCategory = async (id: string) => {
+  try {
+    await ElMessageBox.confirm(
+      '確定要刪除這個分類嗎？相關的費用記錄將被保留。',
+      '確認刪除',
+      {
+        confirmButtonText: '確定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+    store.deleteCategory(id)
+    ElMessage.success('分類刪除成功')
+  } catch {
+    // 用戶取消刪除，不做任何操作
+  }
 }
 
 const addCurrency = () => {
@@ -482,9 +522,22 @@ const addCurrency = () => {
   ElMessage.success('幣別新增成功')
 }
 
-const deleteCurrency = (id: string) => {
-  store.deleteCurrency(id)
-  ElMessage.success('幣別刪除成功')
+const deleteCurrency = async (id: string) => {
+  try {
+    await ElMessageBox.confirm(
+      '確定要刪除這個幣別嗎？相關的費用記錄將被保留。',
+      '確認刪除',
+      {
+        confirmButtonText: '確定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+    store.deleteCurrency(id)
+    ElMessage.success('幣別刪除成功')
+  } catch {
+    // 用戶取消刪除，不做任何操作
+  }
 }
 
 const updateCurrencyRate = (id: string, rate: number) => {
