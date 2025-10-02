@@ -1,9 +1,39 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
 import MainLayout from './components/MainLayout.vue'
+import AuthDialog from './components/AuthDialog.vue'
+import TripSelector from './components/TripSelector.vue'
+import { useAuthStore } from './stores/authStore'
+
+const authStore = useAuthStore()
+const showAuthDialog = ref(false)
+
+onMounted(async () => {
+  await authStore.initAuth()
+  
+  // 如果用戶未登入，顯示登入對話框
+  if (!authStore.isAuthenticated) {
+    showAuthDialog.value = true
+  }
+})
+
+const handleAuthSuccess = () => {
+  showAuthDialog.value = false
+}
 </script>
 
 <template>
-  <MainLayout />
+  <!-- 認證對話框 -->
+  <AuthDialog 
+    v-model="showAuthDialog"
+    @success="handleAuthSuccess"
+  />
+  
+  <!-- 主應用 -->
+  <MainLayout v-if="authStore.isAuthenticated" />
+  
+  <!-- 旅程選擇器 -->
+  <TripSelector v-if="authStore.isAuthenticated" />
 </template>
 
 <style>
