@@ -4,8 +4,8 @@
     :title="isLogin ? '登入' : '註冊'"
     width="400px"
     :close-on-click-modal="false"
-    :close-on-press-escape="false"
-    :show-close="false"
+    :close-on-press-escape="true"
+    :show-close="true"
   >
     <el-form :model="formData" :rules="rules" ref="formRef" label-width="80px">
       <el-form-item label="Email" prop="email">
@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { supabase } from '../lib/supabase'
 import { ElMessage } from 'element-plus'
 
@@ -75,6 +75,18 @@ const emit = defineEmits<Emits>()
 const visible = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
+})
+
+// 監聽對話框顯示狀態，重置為登入模式
+watch(() => props.modelValue, (newValue) => {
+  if (newValue) {
+    // 對話框打開時，重置為登入模式並清空表單
+    isLogin.value = true
+    formData.email = ''
+    formData.password = ''
+    formData.confirmPassword = ''
+    formRef.value?.clearValidate()
+  }
 })
 
 const isLogin = ref(true)

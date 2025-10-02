@@ -18,16 +18,22 @@ export const useAuthStore = () => {
       
       // 獲取當前用戶
       const { data: { session } } = await supabase.auth.getSession()
+      console.log('Initial session:', session)
       user.value = session?.user || null
+      console.log('Initial user:', user.value?.email)
       
       // 監聽認證狀態變化
       supabase.auth.onAuthStateChange((event, session) => {
         console.log('Auth state changed:', event, session?.user?.email)
+        console.log('Previous user:', user.value?.email)
         user.value = session?.user || null
+        console.log('New user:', user.value?.email)
+        console.log('isAuthenticated:', !!user.value)
         
         if (event === 'SIGNED_OUT') {
           // 清除本地數據
           localStorage.removeItem('bill-splitter-data')
+          console.log('Cleared local storage')
         }
       })
     } catch (err) {
@@ -41,12 +47,20 @@ export const useAuthStore = () => {
   // 登出
   const signOut = async () => {
     try {
+      console.log('開始登出，當前用戶:', user.value?.email)
       loading.value = true
-      const { error: signOutError } = await supabase.auth.signOut()
-      if (signOutError) throw signOutError
       
-      user.value = null
+      const { error: signOutError } = await supabase.auth.signOut()
+      if (signOutError) {
+        console.error('Supabase 登出錯誤:', signOutError)
+        throw signOutError
+      }
+      
+      console.log('Supabase 登出成功')
+      // 注意：不手動設置 user.value = null，讓認證狀態監聽器處理
       error.value = null
+      
+      console.log('登出完成，等待認證狀態更新...')
     } catch (err) {
       console.error('登出失敗:', err)
       error.value = err instanceof Error ? err.message : '登出失敗'
