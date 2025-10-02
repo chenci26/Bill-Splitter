@@ -1,156 +1,182 @@
-# 部署指南
+# 部署到 GitHub Pages 指南
 
-## GitHub Pages 部署
+## 📋 前置準備
 
-### 方法一：使用 GitHub Actions（推薦）
+### 1. 確認 GitHub 倉庫設置
 
-1. **推送代碼到GitHub**
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin https://github.com/yourusername/BillSpliter.git
-   git push -u origin main
-   ```
+確保你的專案已經推送到 GitHub，倉庫名稱應該是 `Bill-Splitter`（或修改 `vite.config.ts` 中的 `base` 路徑）。
 
-2. **啟用GitHub Pages**
-   - 進入GitHub倉庫的 Settings 頁面
-   - 滾動到 "Pages" 部分
-   - 在 "Source" 下選擇 "GitHub Actions"
-   - 保存設置
+### 2. 設置 Supabase 環境變數
 
-3. **自動部署**
-   - 每次推送到 `main` 分支時，GitHub Actions 會自動構建並部署
-   - 部署完成後，網站將在 `https://yourusername.github.io/BillSpliter/` 可用
+在 GitHub 倉庫中設置以下 Secrets：
 
-### 方法二：手動部署
+1. 進入 GitHub 倉庫頁面
+2. 點擊 **Settings** → **Secrets and variables** → **Actions**
+3. 點擊 **New repository secret**
+4. 添加以下兩個 secrets：
 
-1. **構建項目**
-   ```bash
-   npm run build
-   ```
+   **Secret 1:**
+   - Name: `VITE_SUPABASE_URL`
+   - Value: 你的 Supabase 專案 URL（例如：`https://xxxxx.supabase.co`）
 
-2. **安裝 gh-pages**
-   ```bash
-   npm install --save-dev gh-pages
-   ```
+   **Secret 2:**
+   - Name: `VITE_SUPABASE_ANON_KEY`
+   - Value: 你的 Supabase Anon Key
 
-3. **部署到GitHub Pages**
-   ```bash
-   npm run deploy
-   ```
+### 3. 啟用 GitHub Pages
 
-4. **在GitHub設置中啟用Pages**
-   - 進入倉庫 Settings > Pages
-   - 選擇 "Deploy from a branch"
-   - 選擇 "gh-pages" 分支
-   - 保存設置
+1. 進入 GitHub 倉庫頁面
+2. 點擊 **Settings** → **Pages**
+3. 在 **Source** 選擇 **GitHub Actions**
+4. 點擊 **Save**
 
-## 多人在線協作
+## 🚀 部署步驟
 
-### 數據同步機制
+### 方法 1：自動部署（推薦）
 
-本應用使用瀏覽器本地存儲（localStorage）來保存數據，這意味著：
+只需將代碼推送到 `main` 分支，GitHub Actions 會自動構建和部署：
 
-1. **同一個瀏覽器**：數據會在不同標籤頁之間同步
-2. **不同瀏覽器/設備**：需要手動導入/導出數據來同步
-
-### 數據共享方法
-
-1. **導出數據**
-   - 在統計頁面點擊"導出數據"按鈕
-   - 下載 JSON 文件
-
-2. **導入數據**
-   - 將 JSON 文件發送給其他用戶
-   - 其他用戶可以通過瀏覽器開發者工具導入數據
-
-### 改進建議
-
-為了實現真正的多人在線協作，可以考慮：
-
-1. **後端API**：使用 Firebase、Supabase 或自建後端
-2. **實時同步**：使用 WebSocket 或 Server-Sent Events
-3. **用戶認證**：添加登錄系統
-4. **數據庫**：使用雲數據庫存儲數據
-
-## 環境變量
-
-如果需要自定義配置，可以創建 `.env` 文件：
-
-```env
-# GitHub Pages 基礎路徑
-VITE_BASE_PATH=/BillSpliter/
-
-# API 端點（如果使用後端）
-VITE_API_URL=https://your-api.com
+```bash
+git add .
+git commit -m "feat: 更新功能"
+git push origin main
 ```
 
-## 故障排除
+### 方法 2：手動觸發部署
 
-### 常見問題
+1. 進入 GitHub 倉庫頁面
+2. 點擊 **Actions** 標籤
+3. 選擇 **Deploy to GitHub Pages** workflow
+4. 點擊 **Run workflow**
+5. 選擇 `main` 分支
+6. 點擊 **Run workflow**
 
-1. **頁面空白**
-   - 檢查控制台錯誤
-   - 確認所有依賴已正確安裝
-   - 檢查路由配置
+## 📊 查看部署狀態
 
-2. **樣式不正確**
-   - 確認 Element Plus 已正確導入
-   - 檢查 CSS 文件路徑
+1. 進入 **Actions** 標籤
+2. 查看最新的 workflow run
+3. 等待構建完成（通常需要 2-3 分鐘）
+4. 部署成功後，訪問：`https://你的GitHub用戶名.github.io/Bill-Splitter/`
 
-3. **數據不保存**
-   - 檢查瀏覽器是否支持 localStorage
-   - 確認沒有禁用 JavaScript
+## ⚙️ 配置說明
 
-4. **部署失敗**
-   - 檢查 GitHub Actions 日誌
-   - 確認 Node.js 版本兼容性
-   - 檢查構建腳本是否正確
+### vite.config.ts
 
-### 調試技巧
+```typescript
+base: process.env.NODE_ENV === 'production' ? '/Bill-Splitter/' : '/'
+```
 
-1. **本地測試**
-   ```bash
-   npm run build
-   npm run preview
-   ```
+- 生產環境使用 `/Bill-Splitter/` 作為 base URL
+- 開發環境使用 `/` 作為 base URL
+- **重要**: 如果你的倉庫名稱不是 `Bill-Splitter`，需要修改這裡的路徑
 
-2. **檢查構建輸出**
-   ```bash
-   ls -la dist/
-   ```
+### GitHub Actions Workflow
 
-3. **查看網絡請求**
-   - 使用瀏覽器開發者工具的 Network 標籤
-   - 檢查資源加載狀態
+位置：`.github/workflows/deploy.yml`
 
-## 性能優化
+workflow 會在以下情況觸發：
+- 推送代碼到 `main` 分支
+- 手動觸發
 
-1. **代碼分割**
-   - 使用動態導入減少初始包大小
-   - 按路由分割代碼
+構建步驟：
+1. Checkout 代碼
+2. 設置 Node.js 18
+3. 安裝依賴 (`npm ci`)
+4. 構建專案（使用環境變數）
+5. 上傳構建產物
+6. 部署到 GitHub Pages
 
-2. **資源優化**
-   - 壓縮圖片
-   - 使用 CDN 加速
+## 🔧 常見問題
 
-3. **緩存策略**
-   - 設置適當的緩存頭
-   - 使用 Service Worker
+### Q1: 部署後頁面顯示 404
 
-## 安全考慮
+**原因**: `base` 路徑配置錯誤
 
-1. **數據驗證**
-   - 前端和後端都要驗證輸入
-   - 防止 XSS 攻擊
+**解決方法**:
+1. 確認倉庫名稱
+2. 修改 `vite.config.ts` 中的 `base` 路徑
+3. 重新構建部署
 
-2. **敏感信息**
-   - 不要在客戶端存儲敏感信息
-   - 使用 HTTPS
+### Q2: 環境變數未生效
 
-3. **權限控制**
-   - 實現適當的訪問控制
-   - 防止未授權訪問
+**原因**: GitHub Secrets 未正確設置
 
+**解決方法**:
+1. 檢查 Secrets 名稱是否正確（大小寫敏感）
+2. 確認 Secrets 值沒有多餘的空格或引號
+3. 重新運行 workflow
+
+### Q3: Supabase 連接失敗
+
+**原因**: 跨域問題或環境變數錯誤
+
+**解決方法**:
+1. 在 Supabase Dashboard 中添加你的 GitHub Pages 域名到允許的來源
+2. 位置：Settings → API → URL Configuration → Site URL
+3. 添加：`https://你的GitHub用戶名.github.io`
+
+### Q4: 構建失敗
+
+**原因**: 依賴問題或 TypeScript 錯誤
+
+**解決方法**:
+1. 查看 Actions 日誌找出具體錯誤
+2. 本地運行 `npm run build` 檢查是否有錯誤
+3. 修復錯誤後重新推送
+
+## 📝 本地測試生產構建
+
+在推送到 GitHub 之前，可以本地測試生產構建：
+
+```bash
+# 構建
+npm run build
+
+# 預覽
+npm run preview
+```
+
+然後訪問 `http://localhost:4173/Bill-Splitter/` 測試。
+
+## 🔄 更新部署
+
+每次更新代碼並推送到 `main` 分支，GitHub Actions 會自動重新構建和部署。
+
+```bash
+# 開發流程
+git add .
+git commit -m "fix: 修復某個問題"
+git push origin main
+
+# 等待 2-3 分鐘，新版本會自動上線
+```
+
+## 🌐 自定義域名（可選）
+
+如果你有自己的域名：
+
+1. 在倉庫根目錄創建 `public/CNAME` 文件
+2. 內容為你的域名，例如：`billsplitter.yourdomain.com`
+3. 在域名 DNS 設置中添加 CNAME 記錄指向 `你的GitHub用戶名.github.io`
+4. 推送代碼
+5. 在 GitHub Settings → Pages 中驗證域名
+
+## 📚 相關資源
+
+- [GitHub Pages 文檔](https://docs.github.com/en/pages)
+- [GitHub Actions 文檔](https://docs.github.com/en/actions)
+- [Vite 部署指南](https://vitejs.dev/guide/static-deploy.html)
+- [Supabase 文檔](https://supabase.com/docs)
+
+## ✅ 部署檢查清單
+
+在部署前確認：
+
+- [ ] 已設置 GitHub Secrets（`VITE_SUPABASE_URL` 和 `VITE_SUPABASE_ANON_KEY`）
+- [ ] 已啟用 GitHub Pages（Source 設為 GitHub Actions）
+- [ ] `vite.config.ts` 中的 `base` 路徑正確
+- [ ] Supabase 已添加 GitHub Pages 域名到允許列表
+- [ ] 本地 `npm run build` 可以成功構建
+- [ ] 代碼已推送到 `main` 分支
+
+完成以上步驟後，你的應用應該可以在 `https://你的GitHub用戶名.github.io/Bill-Splitter/` 訪問了！🎉
