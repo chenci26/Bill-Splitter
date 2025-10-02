@@ -495,10 +495,31 @@ export const useSupabaseStore = defineStore('supabase', () => {
     }
   }
 
-  // 訂閱即時更新
+  // 訂閱管理
+  let expensesChannel: any = null
+  let tripsChannel: any = null
+
+  // 取消所有訂閱
+  const unsubscribeAll = () => {
+    if (expensesChannel) {
+      supabase.removeChannel(expensesChannel)
+      expensesChannel = null
+    }
+    if (tripsChannel) {
+      supabase.removeChannel(tripsChannel)
+      tripsChannel = null
+    }
+  }
+
+  // 訂閱費用記錄的即時更新
   const subscribeToExpenses = (tripId: string) => {
-    return supabase
-      .channel('expenses')
+    // 先取消之前的訂閱
+    if (expensesChannel) {
+      supabase.removeChannel(expensesChannel)
+    }
+
+    expensesChannel = supabase
+      .channel(`expenses:${tripId}`)
       .on('postgres_changes', 
         { 
           event: '*', 
@@ -507,12 +528,58 @@ export const useSupabaseStore = defineStore('supabase', () => {
           filter: `trip_id=eq.${tripId}`
         }, 
         (payload) => {
-          console.log('Expense changed:', payload)
-          // 重新載入費用記錄
-          loadExpenses(tripId)
+          // 根據事件類型處理
+          if (payload.eventType === 'INSERT') {
+            const newExpense = dbToExpense(payload.new)
+            // 檢查是否已存在
+            if (!expenses.value.find(e => e.id === newExpense.id)) {
+              expenses.value.unshift(newExpense)
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedExpense = dbToExpense(payload.new)
+            const index = expenses.value.findIndex(e => e.id === updatedExpense.id)
+            if (index !== -1) {
+              expenses.value[index] = updatedExpense
+            }
+          } else if (payload.eventType === 'DELETE') {
+            expenses.value = expenses.value.filter(e => e.id !== payload.old.id)
+          }
         }
       )
       .subscribe()
+
+    return expensesChannel
+  }
+
+  // 訂閱旅程設置的即時更新
+  const subscribeToTrip = (tripId: string) => {
+    // 先取消之前的訂閱
+    if (tripsChannel) {
+      supabase.removeChannel(tripsChannel)
+    }
+
+    tripsChannel = supabase
+      .channel(`trips:${tripId}`)
+      .on('postgres_changes', 
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'trips',
+          filter: `id=eq.${tripId}`
+        }, 
+        (payload) => {
+          // 更新旅程設置
+          if (payload.new && currentTrip.value) {
+            currentTrip.value = payload.new as Trip
+            people.value = payload.new.settings?.people || []
+            categories.value = payload.new.settings?.categories || []
+            currencies.value = payload.new.settings?.currencies || []
+          }
+        }
+      )
+      .subscribe()
+
+    return tripsChannel
   }
 
   return {
@@ -544,6 +611,8 @@ export const useSupabaseStore = defineStore('supabase', () => {
     addCurrency,
     deleteCurrency,
     updateCurrencyRate,
-    subscribeToExpenses
+    subscribeToExpenses,
+    subscribeToTrip,
+    unsubscribeAll
   }
 })

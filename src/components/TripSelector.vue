@@ -79,11 +79,48 @@
       <div class="trip-details">
         <p v-if="currentTrip?.description">{{ currentTrip.description }}</p>
         <div class="trip-stats">
-          <el-tag type="info">成員：{{ currentTrip?.members?.length || 0 }} 人</el-tag>
           <el-tag type="success">費用記錄：{{ expenseCount }} 筆</el-tag>
+        </div>
+        
+        <!-- 成員列表 -->
+        <div class="members-section">
+          <div class="section-header">
+            <strong>成員 ({{ currentTrip?.members?.length || 0 }} 人)</strong>
+            <el-button type="primary" size="small" @click="showInviteDialog = true">
+              邀請成員
+            </el-button>
+          </div>
+          <div class="members-list">
+            <el-tag 
+              v-for="member in currentTrip?.members" 
+              :key="member"
+              closable
+              @close="removeMember(member)"
+              style="margin: 5px;"
+            >
+              {{ member }}
+            </el-tag>
+          </div>
         </div>
       </div>
     </el-card>
+    
+    <!-- 邀請成員對話框 -->
+    <el-dialog v-model="showInviteDialog" title="邀請成員" width="400px">
+      <el-form @submit.prevent="inviteMember">
+        <el-form-item label="成員 Email">
+          <el-input 
+            v-model="inviteEmail" 
+            placeholder="請輸入成員的 Email"
+            @keyup.enter="inviteMember"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showInviteDialog = false">取消</el-button>
+        <el-button type="primary" @click="inviteMember">邀請</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -91,7 +128,7 @@
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import { useSupabaseStore, type Trip } from '../stores/supabaseStore'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const authStore = useAuthStore()
 const supabaseStore = useSupabaseStore()
@@ -99,6 +136,8 @@ const supabaseStore = useSupabaseStore()
 const loading = ref(false)
 const userTrips = ref<Trip[]>([])
 const tripFormRef = ref()
+const showInviteDialog = ref(false)
+const inviteEmail = ref('')
 
 const newTrip = reactive({
   name: '',
@@ -209,8 +248,9 @@ const selectTrip = async (trip: Trip) => {
     // 載入費用記錄
     await supabaseStore.loadExpenses(trip.id)
     
-    // 訂閱即時更新
+    // 訂閱即時更新（費用記錄和旅程設置）
     supabaseStore.subscribeToExpenses(trip.id)
+    supabaseStore.subscribeToTrip(trip.id)
     
     ElMessage.success(`已選擇旅程：${trip.name}`)
   } catch (err) {
@@ -224,12 +264,116 @@ const selectTrip = async (trip: Trip) => {
 // 離開旅程
 const leaveTrip = async () => {
   try {
+    // 取消所有訂閱
+    supabaseStore.unsubscribeAll()
+    
     supabaseStore.currentTrip = null
     supabaseStore.expenses = []
     ElMessage.success('已離開旅程')
   } catch (err) {
     console.error('離開旅程失敗:', err)
     ElMessage.error('離開旅程失敗')
+  }
+}
+
+// 邀請成員
+const inviteMember = async () => {
+  if (!inviteEmail.value.trim()) {
+    ElMessage.error('請輸入成員 Email')
+    return
+  }
+  
+  if (!currentTrip.value) {
+    ElMessage.error('請先選擇旅程')
+    return
+  }
+  
+  try {
+    loading.value = true
+    
+    // 檢查 Email 格式
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(inviteEmail.value)) {
+      ElMessage.error('請輸入有效的 Email 地址')
+      return
+    }
+    
+    // 檢查是否已經是成員
+    if (currentTrip.value.members.includes(inviteEmail.value)) {
+      ElMessage.warning('該成員已在旅程中')
+      return
+    }
+    
+    // 更新成員列表
+    const updatedMembers = [...currentTrip.value.members, inviteEmail.value]
+    
+    const { error } = await supabaseStore.supabase
+      .from('trips')
+      .update({ members: updatedMembers })
+      .eq('id', currentTrip.value.id)
+    
+    if (error) throw error
+    
+    // 更新本地狀態
+    currentTrip.value.members = updatedMembers
+    
+    ElMessage.success(`已邀請 ${inviteEmail.value}`)
+    inviteEmail.value = ''
+    showInviteDialog.value = false
+  } catch (err) {
+    console.error('邀請成員失敗:', err)
+    ElMessage.error('邀請成員失敗')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 移除成員
+const removeMember = async (memberEmail: string) => {
+  if (!currentTrip.value) return
+  
+  try {
+    // 不能移除創建者
+    const { data: { user } } = await supabaseStore.supabase.auth.getUser()
+    if (memberEmail === user?.email) {
+      ElMessage.warning('無法移除旅程創建者')
+      return
+    }
+    
+    // 確認移除
+    await ElMessageBox.confirm(
+      `確定要移除成員 ${memberEmail} 嗎？`,
+      '移除成員',
+      {
+        confirmButtonText: '確定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    loading.value = true
+    
+    // 更新成員列表
+    const updatedMembers = currentTrip.value.members.filter(m => m !== memberEmail)
+    
+    const { error } = await supabaseStore.supabase
+      .from('trips')
+      .update({ members: updatedMembers })
+      .eq('id', currentTrip.value.id)
+    
+    if (error) throw error
+    
+    // 更新本地狀態
+    currentTrip.value.members = updatedMembers
+    
+    ElMessage.success(`已移除成員 ${memberEmail}`)
+  } catch (err: any) {
+    if (err !== 'cancel') {
+      console.error('移除成員失敗:', err)
+      ElMessage.error('移除成員失敗')
+    }
+  } finally {
+    loading.value = false
   }
 }
 
@@ -337,5 +481,27 @@ watch(() => authStore.isAuthenticated, (isAuthenticated, oldValue) => {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+
+.members-section {
+  margin-top: 20px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.members-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 10px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  min-height: 40px;
 }
 </style>
