@@ -9,31 +9,23 @@
         </el-tabs>
       </el-header>
       <el-main class="main-content">
-        <router-view />
+        <ExpensePage v-if="activeTab === 'expense'" />
+        <StatisticsPage v-if="activeTab === 'statistics'" />
       </el-main>
     </el-container>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-
-const router = useRouter()
-const route = useRoute()
+import { ref } from 'vue'
+import ExpensePage from '../views/ExpensePage.vue'
+import StatisticsPage from '../views/StatisticsPage.vue'
 
 const activeTab = ref('expense')
 
 const handleTabChange = (tabName: string) => {
-  router.push(`/${tabName}`)
+  activeTab.value = tabName
 }
-
-// 監聽路由變化，更新activeTab
-watch(() => route.name, (newName) => {
-  if (newName === 'expense' || newName === 'statistics') {
-    activeTab.value = newName
-  }
-}, { immediate: true })
 </script>
 
 <style scoped>

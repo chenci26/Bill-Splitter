@@ -1,23 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import ExpensePage from '../views/ExpensePage.vue'
-import StatisticsPage from '../views/StatisticsPage.vue'
+import MainLayout from '../components/MainLayout.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      redirect: '/expense'
+      component: MainLayout
     },
     {
-      path: '/expense',
-      name: 'expense',
-      component: ExpensePage
-    },
-    {
-      path: '/statistics',
-      name: 'statistics',
-      component: StatisticsPage
+      path: '/:pathMatch(.*)*',
+      component: MainLayout
     }
   ]
 })
