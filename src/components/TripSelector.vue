@@ -88,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import { useSupabaseStore, type Trip } from '../stores/supabaseStore'
 import { ElMessage } from 'element-plus'
@@ -112,22 +112,61 @@ const tripRules = {
   ]
 }
 
-const currentTrip = computed(() => supabaseStore.currentTrip.value)
-const expenseCount = computed(() => supabaseStore.expenses.value?.length || 0)
+const currentTrip = computed(() => supabaseStore.currentTrip)
+const expenseCount = computed(() => supabaseStore.expenses?.length || 0)
 
 // 載入用戶的旅程列表
 const loadUserTrips = async () => {
   try {
-    if (!authStore.user) return
+    console.log('載入用戶旅程列表')
+    console.log('用戶:', authStore.user?.email)
+    console.log('用戶ID:', authStore.user?.id)
     
+    if (!authStore.user) {
+      console.log('用戶未登入，跳過載入旅程')
+      return
+    }
+    
+    // 先測試基本連接
+    console.log('測試 Supabase 連接...')
+    const { data: testData, error: testError } = await supabaseStore.supabase
+      .from('trips')
+      .select('count')
+      .limit(1)
+    
+    console.log('連接測試結果:', { testData, testError })
+    
+    if (testError) {
+      console.error('Supabase 連接失敗:', testError)
+      throw testError
+    }
+    
+    // 嘗試查詢所有旅程
+    console.log('查詢所有旅程...')
+    const { data: allTrips, error: allError } = await supabaseStore.supabase
+      .from('trips')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    console.log('所有旅程查詢結果:', { allTrips, allError })
+    if (allError) {
+      console.error('查詢所有旅程錯誤:', allError)
+      throw allError
+    }
+    
+    // 然後查詢用戶相關的旅程
     const { data, error } = await supabaseStore.supabase
       .from('trips')
       .select('*')
-      .or(`created_by.eq.${authStore.user?.value?.id || ''},members.cs.{${authStore.userEmail.value}}`)
+      .or(`created_by.eq.${authStore.user.id},members.cs.{${authStore.userEmail}}`)
       .order('created_at', { ascending: false })
     
-    if (error) throw error
+    if (error) {
+      console.error('載入旅程列表資料庫錯誤:', error)
+      throw error
+    }
     
+    console.log('用戶相關的旅程列表:', data)
     userTrips.value = data || []
   } catch (err) {
     console.error('載入旅程列表失敗:', err)
@@ -167,6 +206,9 @@ const selectTrip = async (trip: Trip) => {
     loading.value = true
     await supabaseStore.loadTrip(trip.id)
     
+    // 載入費用記錄
+    await supabaseStore.loadExpenses(trip.id)
+    
     // 訂閱即時更新
     supabaseStore.subscribeToExpenses(trip.id)
     
@@ -182,8 +224,8 @@ const selectTrip = async (trip: Trip) => {
 // 離開旅程
 const leaveTrip = async () => {
   try {
-    supabaseStore.currentTrip.value = null
-    supabaseStore.expenses.value = []
+    supabaseStore.currentTrip = null
+    supabaseStore.expenses = []
     ElMessage.success('已離開旅程')
   } catch (err) {
     console.error('離開旅程失敗:', err)
@@ -192,10 +234,32 @@ const leaveTrip = async () => {
 }
 
 onMounted(() => {
-  if (authStore.isAuthenticated) {
-    loadUserTrips()
-  }
+  console.log('TripSelector mounted')
+  console.log('authStore 實例:', authStore)
+  console.log('認證狀態:', authStore.isAuthenticated)
+  console.log('用戶:', authStore.user)
+  
+  // 延遲一點時間等待認證狀態初始化
+  setTimeout(() => {
+    console.log('延遲檢查認證狀態:', authStore.isAuthenticated)
+    console.log('延遲檢查用戶:', authStore.user)
+    if (authStore.isAuthenticated) {
+      loadUserTrips()
+    }
+  }, 500)
 })
+
+// 監聽認證狀態變化
+watch(() => authStore.isAuthenticated, (isAuthenticated, oldValue) => {
+  console.log('認證狀態變化:', { from: oldValue, to: isAuthenticated })
+  console.log('當前用戶:', authStore.user)
+  if (isAuthenticated) {
+    loadUserTrips()
+  } else {
+    userTrips.value = []
+    supabaseStore.currentTrip = null
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>

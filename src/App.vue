@@ -14,13 +14,13 @@ onMounted(async () => {
   await authStore.initAuth()
   
   console.log('認證狀態:', {
-    isAuthenticated: authStore.isAuthenticated.value,
-    user: authStore.user.value,
-    userEmail: authStore.userEmail.value
+    isAuthenticated: authStore.isAuthenticated,
+    user: authStore.user,
+    userEmail: authStore.userEmail
   })
   
   // 如果用戶未登入，顯示登入對話框
-  if (!authStore.isAuthenticated.value) {
+  if (!authStore.isAuthenticated) {
     console.log('用戶未登入，顯示登入對話框')
     showAuthDialog.value = true
   } else {
@@ -29,7 +29,7 @@ onMounted(async () => {
 })
 
 // 監聽認證狀態變化
-watch(() => authStore.isAuthenticated.value, (isAuthenticated) => {
+watch(() => authStore.isAuthenticated, (isAuthenticated) => {
   console.log('認證狀態變化:', isAuthenticated)
   if (!isAuthenticated) {
     console.log('用戶登出，顯示登入對話框')
@@ -72,7 +72,7 @@ const toggleTestConnection = () => {
   
   <!-- 主應用 -->
   <MainLayout 
-    v-if="authStore.isAuthenticated.value && !showTestConnection" 
+    v-if="authStore.isAuthenticated && !showTestConnection" 
     @showLoginDialog="showAuthDialog = true"
     @toggleTestConnection="toggleTestConnection"
   />

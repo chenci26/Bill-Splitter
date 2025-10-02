@@ -77,7 +77,7 @@ const handleLogout = async () => {
     // 等待一小段時間讓認證狀態監聽器更新
     await new Promise(resolve => setTimeout(resolve, 100))
     
-    console.log('App: 當前認證狀態:', authStore.isAuthenticated.value)
+    console.log('App: 當前認證狀態:', authStore.isAuthenticated)
     console.log('App: 用戶已登出')
   } catch (error) {
     console.error('App: 登出失敗:', error)

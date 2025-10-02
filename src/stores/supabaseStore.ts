@@ -1,6 +1,10 @@
+import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '../lib/supabase'
 import type { ExpenseItem, Person, Category, Currency } from './expenseStore'
+
+// 重新導出類型
+export type { ExpenseItem, Person, Category, Currency }
 
 export interface Trip {
   id: string
@@ -17,7 +21,37 @@ export interface Trip {
   created_by: string
 }
 
-export const useSupabaseStore = () => {
+// 資料庫記錄轉換函數
+const dbToExpense = (dbRecord: any): ExpenseItem => ({
+  id: dbRecord.id,
+  date: dbRecord.date,
+  itemName: dbRecord.item_name,
+  category: dbRecord.category,
+  amount: dbRecord.amount,
+  originalAmount: dbRecord.original_amount,
+  currency: dbRecord.currency,
+  participants: dbRecord.participants,
+  payer: dbRecord.payer,
+  averageAmount: dbRecord.average_amount,
+  note: dbRecord.note
+})
+
+const expenseToDb = (expense: ExpenseItem) => ({
+  id: expense.id,
+  trip_id: currentTrip.value?.id || '',
+  date: expense.date,
+  item_name: expense.itemName,
+  category: expense.category,
+  amount: expense.amount,
+  original_amount: expense.originalAmount,
+  currency: expense.currency,
+  participants: expense.participants,
+  payer: expense.payer,
+  average_amount: expense.averageAmount,
+  note: expense.note
+})
+
+export const useSupabaseStore = defineStore('supabase', () => {
   // 響應式數據
   const currentTrip = ref<Trip | null>(null)
   const expenses = ref<ExpenseItem[]>([])
@@ -35,6 +69,7 @@ export const useSupabaseStore = () => {
       balance: number
       expenseCount: number
       paidCount: number
+      items: ExpenseItem[]
     }> = {}
 
     expenses.value.forEach(expense => {
@@ -46,11 +81,13 @@ export const useSupabaseStore = () => {
             totalPaid: 0,
             balance: 0,
             expenseCount: 0,
-            paidCount: 0
+            paidCount: 0,
+            items: []
           }
         }
         stats[person].totalSpent += expense.averageAmount
         stats[person].expenseCount += 1
+        stats[person].items.push(expense)
       })
 
       // 統計付款
@@ -60,7 +97,8 @@ export const useSupabaseStore = () => {
           totalPaid: 0,
           balance: 0,
           expenseCount: 0,
-          paidCount: 0
+          paidCount: 0,
+          items: []
         }
       }
       stats[expense.payer]!.totalPaid += expense.amount
@@ -165,6 +203,7 @@ export const useSupabaseStore = () => {
   // 載入旅程
   const loadTrip = async (tripId: string) => {
     try {
+      console.log('載入旅程:', tripId)
       loading.value = true
       error.value = null
 
@@ -174,16 +213,28 @@ export const useSupabaseStore = () => {
         .eq('id', tripId)
         .single()
 
-      if (dbError) throw dbError
+      if (dbError) {
+        console.error('載入旅程資料庫錯誤:', dbError)
+        throw dbError
+      }
 
+      console.log('載入的旅程數據:', data)
       currentTrip.value = data
-      people.value = data.settings.people || []
-      categories.value = data.settings.categories || []
-      currencies.value = data.settings.currencies || []
+      people.value = data.settings?.people || []
+      categories.value = data.settings?.categories || []
+      currencies.value = data.settings?.currencies || []
+
+      console.log('設置的數據:', {
+        people: people.value,
+        categories: categories.value,
+        currencies: currencies.value
+      })
 
       // 載入費用記錄
       await loadExpenses(tripId)
+      console.log('旅程載入成功')
     } catch (err) {
+      console.error('載入旅程失敗:', err)
       error.value = err instanceof Error ? err.message : '載入旅程失敗'
       throw err
     } finally {
@@ -202,7 +253,7 @@ export const useSupabaseStore = () => {
 
       if (dbError) throw dbError
 
-      expenses.value = data || []
+      expenses.value = (data || []).map(dbToExpense)
     } catch (err) {
       error.value = err instanceof Error ? err.message : '載入費用記錄失敗'
       throw err
@@ -238,8 +289,9 @@ export const useSupabaseStore = () => {
 
       if (dbError) throw dbError
 
-      expenses.value.unshift(data)
-      return data
+      const newExpense = dbToExpense(data)
+      expenses.value.unshift(newExpense)
+      return newExpense
     } catch (err) {
       error.value = err instanceof Error ? err.message : '添加費用記錄失敗'
       throw err
@@ -269,11 +321,12 @@ export const useSupabaseStore = () => {
 
       if (dbError) throw dbError
 
+      const updatedExpense = dbToExpense(data)
       const index = expenses.value.findIndex(e => e.id === id)
       if (index !== -1) {
-        expenses.value[index] = data
+        expenses.value[index] = updatedExpense
       }
-      return data
+      return updatedExpense
     } catch (err) {
       error.value = err instanceof Error ? err.message : '更新費用記錄失敗'
       throw err
@@ -300,14 +353,20 @@ export const useSupabaseStore = () => {
   // 添加人員
   const addPerson = async (name: string) => {
     try {
+      console.log('添加人員:', name)
+      console.log('當前旅程:', currentTrip.value?.id)
+      
       if (!currentTrip.value) throw new Error('請先選擇旅程')
 
       const newPerson = { id: Date.now().toString(), name }
       people.value.push(newPerson)
+      console.log('本地人員列表:', people.value)
 
       // 更新旅程設置
       await updateTripSettings()
+      console.log('人員添加成功')
     } catch (err) {
+      console.error('添加人員失敗:', err)
       error.value = err instanceof Error ? err.message : '添加人員失敗'
       throw err
     }
@@ -392,9 +451,19 @@ export const useSupabaseStore = () => {
 
   // 更新旅程設置
   const updateTripSettings = async () => {
-    if (!currentTrip.value) return
+    if (!currentTrip.value) {
+      console.log('沒有當前旅程，跳過設置更新')
+      return
+    }
 
     try {
+      console.log('更新旅程設置:', currentTrip.value.id)
+      console.log('設置數據:', {
+        currencies: currencies.value,
+        categories: categories.value,
+        people: people.value
+      })
+
       const { error: dbError } = await supabase
         .from('trips')
         .update({
@@ -406,7 +475,10 @@ export const useSupabaseStore = () => {
         })
         .eq('id', currentTrip.value.id)
 
-      if (dbError) throw dbError
+      if (dbError) {
+        console.error('資料庫更新錯誤:', dbError)
+        throw dbError
+      }
 
       // 更新本地數據
       currentTrip.value.settings = {
@@ -414,7 +486,10 @@ export const useSupabaseStore = () => {
         categories: categories.value,
         people: people.value
       }
+      
+      console.log('旅程設置更新成功')
     } catch (err) {
+      console.error('更新設置失敗:', err)
       error.value = err instanceof Error ? err.message : '更新設置失敗'
       throw err
     }
@@ -471,4 +546,4 @@ export const useSupabaseStore = () => {
     updateCurrencyRate,
     subscribeToExpenses
   }
-}
+})

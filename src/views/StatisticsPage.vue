@@ -154,18 +154,18 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useExpenseStore } from '../stores/expenseStore'
+import { useSupabaseStore } from '../stores/supabaseStore'
 import { Download, Upload } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
-const store = useExpenseStore()
+const store = useSupabaseStore()
 
 // 計算屬性
-const expenses = computed(() => store.expenses)
-const people = computed(() => store.people)
-const categories = computed(() => store.categories)
-const currencies = computed(() => store.currencies)
-const statistics = computed(() => store.statistics)
+const expenses = store.expenses
+const people = store.people
+const categories = store.categories
+const currencies = store.currencies
+const statistics = store.statistics
 
 const statisticsData = computed(() => {
   return Object.entries(statistics.value).map(([person, data]) => ({
@@ -173,8 +173,8 @@ const statisticsData = computed(() => {
     totalSpent: data.totalSpent,
     totalPaid: data.totalPaid,
     balance: data.balance,
-    itemCount: data.items.length,
-    items: data.items
+    itemCount: (data as any).items.length,
+    items: (data as any).items
   }))
 })
 
@@ -295,8 +295,7 @@ const importData = () => {
             store.currencies = data.currencies
           }
           
-          // 保存到本地存儲
-          store.saveToLocalStorage()
+          // 數據已同步到 Supabase，無需本地存儲
           
           ElMessage.success('數據導入成功')
         }).catch(() => {
