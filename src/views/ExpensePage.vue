@@ -764,4 +764,88 @@ const updateCurrencyRate = async (id: string, rate: number) => {
   color: #409EFF;
   font-size: 12px;
 }
+
+/* RWD 響應式設計 */
+@media (max-width: 768px) {
+  /* 表格水平滾動 */
+  :deep(.el-table) {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  :deep(.el-table__body-wrapper) {
+    overflow-x: auto;
+  }
+  
+  /* 操作按鈕縮小間距 */
+  .action-buttons {
+    gap: 4px;
+    flex-direction: column;
+  }
+  
+  .action-buttons .el-button {
+    width: 100%;
+    margin: 0;
+  }
+  
+  /* 表單調整 */
+  .amount-input-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .amount-input-group .el-select {
+    width: 100%;
+  }
+  
+  /* 標籤列表調整 */
+  .tag-list {
+    gap: 8px;
+  }
+  
+  .currency-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .currency-item .el-input-number {
+    width: 100%;
+  }
+  
+  /* Dialog 內部表單 */
+  :deep(.el-dialog__body) {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  /* 更緊湊的佈局 */
+  .action-buttons {
+    min-height: 60px;
+  }
+  
+  .add-tag {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .add-tag .el-input {
+    width: 100%;
+  }
+  
+  .add-tag .el-button {
+    width: 100%;
+  }
+  
+  /* 讓表格可以左右滑動 */
+  :deep(.el-card__body) {
+    padding: 8px;
+    overflow-x: auto;
+  }
+}
 </style>

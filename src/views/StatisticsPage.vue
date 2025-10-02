@@ -477,4 +477,74 @@ const exportData = () => {
 :deep(.el-collapse-item__content) {
   padding: 10px 0;
 }
+
+/* RWD 響應式設計 */
+@media (max-width: 768px) {
+  /* 統計卡片網格調整 */
+  .total-stats {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  /* 表格水平滾動 */
+  :deep(.el-table) {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  :deep(.el-table__body-wrapper) {
+    overflow-x: auto;
+  }
+  
+  /* 匯入匯出按鈕調整 */
+  :deep(.el-card__header) {
+    padding: 12px;
+  }
+  
+  .import-export-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .import-export-buttons .el-button {
+    width: 100%;
+  }
+  
+  /* 項目明細調整 */
+  .item-detail {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .item-name {
+    font-size: 13px;
+  }
+  
+  .item-amount {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* 更緊湊的卡片 */
+  :deep(.el-card__body) {
+    padding: 10px;
+  }
+  
+  /* 統計數字調整 */
+  :deep(.el-statistic__head) {
+    font-size: 12px;
+  }
+  
+  :deep(.el-statistic__content) {
+    font-size: 16px;
+  }
+  
+  /* 摺疊面板調整 */
+  :deep(.el-collapse-item__header) {
+    font-size: 13px;
+  }
+}
 </style>

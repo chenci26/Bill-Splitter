@@ -556,4 +556,77 @@ watch(() => authStore.isAuthenticated, (isAuthenticated) => {
   gap: 10px;
   align-items: center;
 }
+
+/* RWD 響應式設計 */
+@media (max-width: 768px) {
+  .trip-selector {
+    padding: 15px 10px;
+  }
+  
+  /* 卡片網格調整 */
+  .trip-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  /* 卡片 header 調整 */
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .header-buttons {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .header-buttons .el-button {
+    width: 100%;
+  }
+  
+  /* 旅程詳情調整 */
+  .trip-details {
+    font-size: 13px;
+  }
+  
+  /* 成員列表調整 */
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .section-header .el-button {
+    width: 100%;
+  }
+  
+  /* 新增旅程表單調整 */
+  .create-trip-form .el-form-item__label {
+    min-width: 70px;
+  }
+}
+
+@media (max-width: 480px) {
+  .trip-selector {
+    padding: 10px 8px;
+  }
+  
+  /* 按鈕文字調整 */
+  .header-buttons .el-button {
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+  
+  /* 成員標籤調整 */
+  .members-list {
+    padding: 8px;
+    gap: 6px;
+  }
+  
+  .members-list .el-tag {
+    font-size: 12px;
+  }
+}
 </style>

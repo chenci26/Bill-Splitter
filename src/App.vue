@@ -109,4 +109,111 @@ body {
 :deep(.el-table__body-wrapper) {
   width: 100% !important;
 }
+
+/* RWD 響應式設計 */
+@media (max-width: 768px) {
+  /* 調整 body 字體大小 */
+  body {
+    font-size: 14px;
+  }
+  
+  /* 卡片內距縮小 */
+  :deep(.el-card__body) {
+    padding: 12px;
+  }
+  
+  /* 按鈕組調整 */
+  :deep(.el-button) {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  :deep(.el-button--small) {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  /* 表單項目調整 */
+  :deep(.el-form-item) {
+    margin-bottom: 16px;
+  }
+  
+  :deep(.el-form-item__label) {
+    font-size: 13px;
+  }
+  
+  /* 輸入框調整 */
+  :deep(.el-input__inner),
+  :deep(.el-select__wrapper),
+  :deep(.el-textarea__inner) {
+    font-size: 14px;
+  }
+  
+  /* 表格調整 */
+  :deep(.el-table) {
+    font-size: 12px;
+  }
+  
+  :deep(.el-table th),
+  :deep(.el-table td) {
+    padding: 8px 4px;
+  }
+  
+  /* Dialog 調整 */
+  :deep(.el-dialog) {
+    width: 95% !important;
+    margin: 20px auto !important;
+  }
+  
+  :deep(.el-dialog__body) {
+    padding: 15px;
+  }
+  
+  /* Tag 標籤調整 */
+  :deep(.el-tag) {
+    font-size: 12px;
+    padding: 0 6px;
+    height: 24px;
+    line-height: 24px;
+  }
+  
+  /* 統計卡片調整 */
+  :deep(.el-statistic) {
+    font-size: 13px;
+  }
+  
+  :deep(.el-statistic__content) {
+    font-size: 18px;
+  }
+}
+
+/* 極小螢幕（手機橫屏或小型手機） */
+@media (max-width: 480px) {
+  body {
+    font-size: 13px;
+  }
+  
+  :deep(.el-card__body) {
+    padding: 10px;
+  }
+  
+  :deep(.el-button) {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  :deep(.el-dialog) {
+    width: 98% !important;
+    margin: 10px auto !important;
+  }
+  
+  :deep(.el-table) {
+    font-size: 11px;
+  }
+  
+  :deep(.el-table th),
+  :deep(.el-table td) {
+    padding: 6px 2px;
+  }
+}
 </style>

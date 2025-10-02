@@ -222,4 +222,24 @@ const handleSubmit = async () => {
   justify-content: space-between;
   align-items: center;
 }
+
+/* RWD 響應式設計 */
+@media (max-width: 480px) {
+  .auth-title {
+    font-size: 22px;
+  }
+  
+  .auth-subtitle {
+    font-size: 13px;
+  }
+  
+  .dialog-footer {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+  
+  .dialog-footer .el-button {
+    width: 100%;
+  }
+}
 </style>

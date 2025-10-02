@@ -213,5 +213,86 @@ const showLoginDialog = () => {
   display: flex;
   width: 100%;
 }
+
+/* RWD 響應式設計 */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    height: auto;
+    padding: 10px 15px;
+    gap: 10px;
+  }
+  
+  .header h1 {
+    font-size: 18px;
+  }
+  
+  .header-right {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .auth-status {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+  
+  .header-buttons {
+    flex-direction: row;
+    gap: 5px;
+  }
+  
+  :deep(.el-tabs__item) {
+    font-size: 14px;
+    padding: 0 10px;
+    min-width: 80px;
+    height: 36px;
+    line-height: 36px;
+  }
+  
+  :deep(.el-tabs__nav-wrap) {
+    height: 50px;
+  }
+  
+  .main-content {
+    padding: 15px 10px;
+    height: calc(100vh - 120px); /* 調整 header 變高後的高度 */
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 8px 10px;
+  }
+  
+  .header h1 {
+    font-size: 16px;
+  }
+  
+  .auth-status {
+    font-size: 10px;
+    padding: 2px 4px;
+  }
+  
+  :deep(.el-tabs__item) {
+    font-size: 13px;
+    padding: 0 8px;
+    min-width: 70px;
+    height: 32px;
+    line-height: 32px;
+  }
+  
+  :deep(.el-tabs__nav-wrap) {
+    height: 44px;
+  }
+  
+  .main-content {
+    padding: 10px 8px;
+    height: calc(100vh - 110px);
+  }
+}
 </style>
 
