@@ -13,6 +13,16 @@
 
       <!-- 表格 -->
       <el-table :data="expenses" stripe style="width: 100%">
+        <template #empty>
+          <div class="empty-state">
+            <el-empty description="還沒有任何分帳記錄">
+              <el-button type="primary" @click="showAddDialog = true">
+                <el-icon><Plus /></el-icon>
+                新增第一筆記錄
+              </el-button>
+            </el-empty>
+          </div>
+        </template>
         <el-table-column prop="date" label="日期" width="120" />
         <el-table-column prop="itemName" label="項目名稱" width="150" />
         <el-table-column prop="category" label="分類" width="100">
@@ -451,6 +461,11 @@ const deleteCategory = (id: string) => {
 
 .tag-management {
   padding: 20px 0;
+}
+
+.empty-state {
+  padding: 40px 20px;
+  text-align: center;
 }
 
 .action-buttons {

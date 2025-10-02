@@ -185,6 +185,7 @@ export const useExpenseStore = defineStore('expense', () => {
     addPerson,
     deletePerson,
     addCategory,
-    deleteCategory
+    deleteCategory,
+    saveToLocalStorage
   }
 })

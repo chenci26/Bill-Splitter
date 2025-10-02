@@ -4,15 +4,33 @@
       <template #header>
         <div class="card-header">
           <span>統計分析</span>
-          <el-button type="primary" @click="exportData">
-            <el-icon><Download /></el-icon>
-            導出數據
-          </el-button>
+          <div class="header-buttons">
+            <el-button type="success" @click="importData">
+              <el-icon><Upload /></el-icon>
+              導入數據
+            </el-button>
+            <el-button type="primary" @click="exportData">
+              <el-icon><Download /></el-icon>
+              導出數據
+            </el-button>
+          </div>
         </div>
       </template>
 
       <!-- 統計表格 -->
       <el-table :data="statisticsData" stripe style="width: 100%">
+        <template #empty>
+          <div class="empty-state">
+            <el-empty description="還沒有任何統計數據">
+              <div class="empty-tips">
+                <p>請先在分帳頁面添加一些記錄</p>
+                <el-button type="primary" @click="$router.push('/expense')">
+                  前往分帳頁面
+                </el-button>
+              </div>
+            </el-empty>
+          </div>
+        </template>
         <el-table-column prop="person" label="人員名稱" width="120" />
         <el-table-column prop="totalSpent" label="應付金額" width="120">
           <template #default="{ row }">
@@ -137,8 +155,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useExpenseStore } from '../stores/expenseStore'
-import { Download } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { Download, Upload } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const store = useExpenseStore()
 
@@ -217,6 +235,64 @@ const getCategoryTextColor = (categoryName: string) => {
   return '#ffffff' // 白色文字
 }
 
+const importData = () => {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.json'
+  input.onchange = (event) => {
+    const file = (event.target as HTMLInputElement).files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string
+        const data = JSON.parse(content)
+        
+        // 驗證數據格式
+        if (!data.expenses || !Array.isArray(data.expenses)) {
+          ElMessage.error('無效的數據格式：缺少expenses數組')
+          return
+        }
+
+        // 確認導入
+        ElMessageBox.confirm(
+          '導入數據將覆蓋當前所有數據，是否繼續？',
+          '確認導入',
+          {
+            confirmButtonText: '確定',
+            cancelButtonText: '取消',
+            type: 'warning',
+          }
+        ).then(() => {
+          // 導入數據
+          if (data.expenses) {
+            store.expenses = data.expenses
+          }
+          if (data.people) {
+            store.people = data.people
+          }
+          if (data.categories) {
+            store.categories = data.categories
+          }
+          
+          // 保存到本地存儲
+          store.saveToLocalStorage()
+          
+          ElMessage.success('數據導入成功')
+        }).catch(() => {
+          ElMessage.info('已取消導入')
+        })
+      } catch (error) {
+        ElMessage.error('文件解析失敗，請檢查文件格式')
+        console.error('Import error:', error)
+      }
+    }
+    reader.readAsText(file)
+  }
+  input.click()
+}
+
 const exportData = () => {
   const data = {
     expenses: expenses.value,
@@ -279,6 +355,27 @@ const exportData = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.empty-state {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.empty-tips {
+  margin-top: 20px;
+}
+
+.empty-tips p {
+  margin-bottom: 15px;
+  color: #666;
+  font-size: 14px;
 }
 
 .summary-cards {
