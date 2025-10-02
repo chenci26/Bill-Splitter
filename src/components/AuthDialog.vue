@@ -1,12 +1,17 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="isLogin ? '登入' : '註冊'"
     width="400px"
     :close-on-click-modal="false"
-    :close-on-press-escape="true"
-    :show-close="true"
+    :close-on-press-escape="false"
+    :show-close="false"
   >
+    <template #header>
+      <div class="auth-header">
+        <h2 class="auth-title">分帳神器</h2>
+        <p class="auth-subtitle">{{ isLogin ? '登入您的帳號' : '註冊新帳號' }}</p>
+      </div>
+    </template>
     <el-form 
       :model="formData" 
       :rules="rules" 
@@ -161,14 +166,23 @@ const handleSubmit = async () => {
       ElMessage.success('登入成功！')
     } else {
       // 註冊
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password
       })
       
       if (error) throw error
       
-      ElMessage.success('註冊成功！請檢查您的 Email 以確認帳號')
+      // 檢查是否需要 email 確認
+      if (data.user && !data.session) {
+        ElMessage.success('註冊成功！請檢查您的 Email 以確認帳號')
+        // 切換到登入模式
+        isLogin.value = true
+        return
+      }
+      
+      // 如果不需要確認，直接登入成功
+      ElMessage.success('註冊成功！')
     }
     
     emit('success')
@@ -183,6 +197,27 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
+.auth-header {
+  text-align: center;
+  padding: 10px 0;
+}
+
+.auth-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: bold;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.auth-subtitle {
+  margin: 8px 0 0 0;
+  font-size: 14px;
+  color: #909399;
+}
+
 .dialog-footer {
   display: flex;
   justify-content: space-between;
