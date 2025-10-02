@@ -1,8 +1,9 @@
-import { ref, computed } from 'vue'
+import { defineStore } from 'pinia'
+import { ref, computed, nextTick } from 'vue'
 import { supabase } from '../lib/supabase'
 import type { User } from '@supabase/supabase-js'
 
-export const useAuthStore = () => {
+export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const loading = ref(true)
   const error = ref<string | null>(null)
@@ -22,16 +23,17 @@ export const useAuthStore = () => {
       
       // 監聽認證狀態變化
       supabase.auth.onAuthStateChange((event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email)
-        user.value = session?.user || null
-        
-        if (event === 'SIGNED_OUT') {
-          // 清除本地數據
-          localStorage.removeItem('bill-splitter-data')
-        }
+        // 使用 nextTick 確保響應性更新
+        nextTick(() => {
+          user.value = session?.user || null
+          
+          if (event === 'SIGNED_OUT') {
+            // 清除本地數據
+            localStorage.removeItem('bill-splitter-data')
+          }
+        })
       })
     } catch (err) {
-      console.error('初始化認證失敗:', err)
       error.value = err instanceof Error ? err.message : '認證初始化失敗'
     } finally {
       loading.value = false
@@ -42,13 +44,15 @@ export const useAuthStore = () => {
   const signOut = async () => {
     try {
       loading.value = true
-      const { error: signOutError } = await supabase.auth.signOut()
-      if (signOutError) throw signOutError
       
-      user.value = null
+      const { error: signOutError } = await supabase.auth.signOut()
+      if (signOutError) {
+        throw signOutError
+      }
+      
+      // 注意：不手動設置 user.value = null，讓認證狀態監聽器處理
       error.value = null
     } catch (err) {
-      console.error('登出失敗:', err)
       error.value = err instanceof Error ? err.message : '登出失敗'
       throw err
     } finally {
@@ -64,7 +68,6 @@ export const useAuthStore = () => {
       })
       if (error) throw error
     } catch (err) {
-      console.error('密碼重置失敗:', err)
       error.value = err instanceof Error ? err.message : '密碼重置失敗'
       throw err
     }
@@ -85,4 +88,4 @@ export const useAuthStore = () => {
     signOut,
     resetPassword
   }
-}
+})

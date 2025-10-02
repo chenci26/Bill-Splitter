@@ -1,6 +1,10 @@
+import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '../lib/supabase'
 import type { ExpenseItem, Person, Category, Currency } from './expenseStore'
+
+// 重新導出類型
+export type { ExpenseItem, Person, Category, Currency }
 
 export interface Trip {
   id: string
@@ -17,7 +21,28 @@ export interface Trip {
   created_by: string
 }
 
-export const useSupabaseStore = () => {
+// 資料庫記錄轉換函數
+const dbToExpense = (dbRecord: any): ExpenseItem => {
+  const participants = dbRecord.participants || []
+  const amount = dbRecord.amount || 0
+  const averageAmount = dbRecord.average_amount || (participants.length > 0 ? amount / participants.length : 0)
+  
+  return {
+    id: dbRecord.id,
+    date: dbRecord.date,
+    itemName: dbRecord.item_name,
+    category: dbRecord.category,
+    amount,
+    originalAmount: dbRecord.original_amount,
+    currency: dbRecord.currency,
+    participants,
+    payer: dbRecord.payer,
+    averageAmount,
+    note: dbRecord.note
+  }
+}
+
+export const useSupabaseStore = defineStore('supabase', () => {
   // 響應式數據
   const currentTrip = ref<Trip | null>(null)
   const expenses = ref<ExpenseItem[]>([])
@@ -35,6 +60,7 @@ export const useSupabaseStore = () => {
       balance: number
       expenseCount: number
       paidCount: number
+      items: ExpenseItem[]
     }> = {}
 
     expenses.value.forEach(expense => {
@@ -46,11 +72,13 @@ export const useSupabaseStore = () => {
             totalPaid: 0,
             balance: 0,
             expenseCount: 0,
-            paidCount: 0
+            paidCount: 0,
+            items: []
           }
         }
         stats[person].totalSpent += expense.averageAmount
         stats[person].expenseCount += 1
+        stats[person].items.push(expense)
       })
 
       // 統計付款
@@ -60,7 +88,8 @@ export const useSupabaseStore = () => {
           totalPaid: 0,
           balance: 0,
           expenseCount: 0,
-          paidCount: 0
+          paidCount: 0,
+          items: []
         }
       }
       stats[expense.payer]!.totalPaid += expense.amount
@@ -177,9 +206,9 @@ export const useSupabaseStore = () => {
       if (dbError) throw dbError
 
       currentTrip.value = data
-      people.value = data.settings.people || []
-      categories.value = data.settings.categories || []
-      currencies.value = data.settings.currencies || []
+      people.value = data.settings?.people || []
+      categories.value = data.settings?.categories || []
+      currencies.value = data.settings?.currencies || []
 
       // 載入費用記錄
       await loadExpenses(tripId)
@@ -202,10 +231,35 @@ export const useSupabaseStore = () => {
 
       if (dbError) throw dbError
 
-      expenses.value = data || []
+      expenses.value = (data || []).map(dbToExpense)
+      
+      // 修復已有資料的 averageAmount（如果為 0 或 null）
+      await fixExistingAverageAmounts()
     } catch (err) {
       error.value = err instanceof Error ? err.message : '載入費用記錄失敗'
       throw err
+    }
+  }
+  
+  // 修復已有資料的平均金額
+  const fixExistingAverageAmounts = async () => {
+    try {
+      const needsUpdate = expenses.value.filter(expense => 
+        !expense.averageAmount && expense.participants.length > 0
+      )
+      
+      for (const expense of needsUpdate) {
+        const correctAverage = expense.amount / expense.participants.length
+        await supabase
+          .from('expenses')
+          .update({ average_amount: correctAverage })
+          .eq('id', expense.id)
+        
+        // 更新本地資料
+        expense.averageAmount = correctAverage
+      }
+    } catch (err) {
+      // 靜默失敗，不影響主流程
     }
   }
 
@@ -238,8 +292,9 @@ export const useSupabaseStore = () => {
 
       if (dbError) throw dbError
 
-      expenses.value.unshift(data)
-      return data
+      const newExpense = dbToExpense(data)
+      expenses.value.unshift(newExpense)
+      return newExpense
     } catch (err) {
       error.value = err instanceof Error ? err.message : '添加費用記錄失敗'
       throw err
@@ -269,11 +324,12 @@ export const useSupabaseStore = () => {
 
       if (dbError) throw dbError
 
+      const updatedExpense = dbToExpense(data)
       const index = expenses.value.findIndex(e => e.id === id)
       if (index !== -1) {
-        expenses.value[index] = data
+        expenses.value[index] = updatedExpense
       }
-      return data
+      return updatedExpense
     } catch (err) {
       error.value = err instanceof Error ? err.message : '更新費用記錄失敗'
       throw err
@@ -303,7 +359,11 @@ export const useSupabaseStore = () => {
       if (!currentTrip.value) throw new Error('請先選擇旅程')
 
       const newPerson = { id: Date.now().toString(), name }
-      people.value.push(newPerson)
+      // 確保 people.value 是數組
+      if (!Array.isArray(people.value)) {
+        people.value = []
+      }
+      people.value = [...people.value, newPerson]
 
       // 更新旅程設置
       await updateTripSettings()
@@ -316,7 +376,8 @@ export const useSupabaseStore = () => {
   // 刪除人員
   const deletePerson = async (id: string) => {
     try {
-      people.value = people.value.filter(p => p.id !== id)
+      const newPeople = people.value.filter(p => p.id !== id)
+      people.value = newPeople
       await updateTripSettings()
     } catch (err) {
       error.value = err instanceof Error ? err.message : '刪除人員失敗'
@@ -330,7 +391,11 @@ export const useSupabaseStore = () => {
       if (!currentTrip.value) throw new Error('請先選擇旅程')
 
       const newCategory = { id: Date.now().toString(), name, color }
-      categories.value.push(newCategory)
+      // 確保 categories.value 是數組
+      if (!Array.isArray(categories.value)) {
+        categories.value = []
+      }
+      categories.value = [...categories.value, newCategory]
 
       await updateTripSettings()
     } catch (err) {
@@ -342,7 +407,8 @@ export const useSupabaseStore = () => {
   // 刪除分類
   const deleteCategory = async (id: string) => {
     try {
-      categories.value = categories.value.filter(c => c.id !== id)
+      const newCategories = categories.value.filter(c => c.id !== id)
+      categories.value = newCategories
       await updateTripSettings()
     } catch (err) {
       error.value = err instanceof Error ? err.message : '刪除分類失敗'
@@ -356,7 +422,11 @@ export const useSupabaseStore = () => {
       if (!currentTrip.value) throw new Error('請先選擇旅程')
 
       const newCurrency = { id: Date.now().toString(), name, symbol, rate }
-      currencies.value.push(newCurrency)
+      // 確保 currencies.value 是數組
+      if (!Array.isArray(currencies.value)) {
+        currencies.value = []
+      }
+      currencies.value = [...currencies.value, newCurrency]
 
       await updateTripSettings()
     } catch (err) {
@@ -368,7 +438,8 @@ export const useSupabaseStore = () => {
   // 刪除幣別
   const deleteCurrency = async (id: string) => {
     try {
-      currencies.value = currencies.value.filter(c => c.id !== id)
+      const newCurrencies = currencies.value.filter(c => c.id !== id)
+      currencies.value = newCurrencies
       await updateTripSettings()
     } catch (err) {
       error.value = err instanceof Error ? err.message : '刪除幣別失敗'
@@ -392,9 +463,12 @@ export const useSupabaseStore = () => {
 
   // 更新旅程設置
   const updateTripSettings = async () => {
-    if (!currentTrip.value) return
-
+    if (!currentTrip.value) {
+      return
+    }
+    
     try {
+
       const { error: dbError } = await supabase
         .from('trips')
         .update({
@@ -420,10 +494,31 @@ export const useSupabaseStore = () => {
     }
   }
 
-  // 訂閱即時更新
+  // 訂閱管理
+  let expensesChannel: any = null
+  let tripsChannel: any = null
+
+  // 取消所有訂閱
+  const unsubscribeAll = () => {
+    if (expensesChannel) {
+      supabase.removeChannel(expensesChannel)
+      expensesChannel = null
+    }
+    if (tripsChannel) {
+      supabase.removeChannel(tripsChannel)
+      tripsChannel = null
+    }
+  }
+
+  // 訂閱費用記錄的即時更新
   const subscribeToExpenses = (tripId: string) => {
-    return supabase
-      .channel('expenses')
+    // 先取消之前的訂閱
+    if (expensesChannel) {
+      supabase.removeChannel(expensesChannel)
+    }
+
+    expensesChannel = supabase
+      .channel(`expenses:${tripId}`)
       .on('postgres_changes', 
         { 
           event: '*', 
@@ -432,12 +527,60 @@ export const useSupabaseStore = () => {
           filter: `trip_id=eq.${tripId}`
         }, 
         (payload) => {
-          console.log('Expense changed:', payload)
-          // 重新載入費用記錄
-          loadExpenses(tripId)
+          // 根據事件類型處理
+          if (payload.eventType === 'INSERT') {
+            const newExpense = dbToExpense(payload.new)
+            // 檢查是否已存在
+            if (!expenses.value.find(e => e.id === newExpense.id)) {
+              expenses.value.unshift(newExpense)
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedExpense = dbToExpense(payload.new)
+            const index = expenses.value.findIndex(e => e.id === updatedExpense.id)
+            if (index !== -1) {
+              expenses.value[index] = updatedExpense
+            }
+          } else if (payload.eventType === 'DELETE') {
+            expenses.value = expenses.value.filter(e => e.id !== payload.old.id)
+          }
         }
       )
       .subscribe()
+
+    return expensesChannel
+  }
+
+  // 訂閱旅程設置的即時更新
+  const subscribeToTrip = (tripId: string) => {
+    // 先取消之前的訂閱
+    if (tripsChannel) {
+      supabase.removeChannel(tripsChannel)
+    }
+
+    tripsChannel = supabase
+      .channel(`trips:${tripId}`)
+      .on('postgres_changes', 
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'trips',
+          filter: `id=eq.${tripId}`
+        }, 
+        (payload) => {
+          // 更新旅程設置
+          if (payload.new && currentTrip.value) {
+            const newTrip = payload.new as Trip
+            currentTrip.value = newTrip
+            // 創建新數組引用以確保響應式更新
+            people.value = [...(newTrip.settings?.people || [])]
+            categories.value = [...(newTrip.settings?.categories || [])]
+            currencies.value = [...(newTrip.settings?.currencies || [])]
+          }
+        }
+      )
+      .subscribe()
+
+    return tripsChannel
   }
 
   return {
@@ -469,6 +612,9 @@ export const useSupabaseStore = () => {
     addCurrency,
     deleteCurrency,
     updateCurrencyRate,
-    subscribeToExpenses
+    updateTripSettings,
+    subscribeToExpenses,
+    subscribeToTrip,
+    unsubscribeAll
   }
-}
+})
