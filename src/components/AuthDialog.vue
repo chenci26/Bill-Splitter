@@ -7,13 +7,20 @@
     :close-on-press-escape="true"
     :show-close="true"
   >
-    <el-form :model="formData" :rules="rules" ref="formRef" label-width="80px">
+    <el-form 
+      :model="formData" 
+      :rules="rules" 
+      ref="formRef" 
+      label-width="80px"
+      @submit.prevent="handleSubmit"
+    >
       <el-form-item label="Email" prop="email">
         <el-input
           v-model="formData.email"
           type="email"
           placeholder="請輸入 Email"
           :disabled="loading"
+          @keyup.enter="handleSubmit"
         />
       </el-form-item>
       
@@ -24,6 +31,7 @@
           placeholder="請輸入密碼"
           :disabled="loading"
           show-password
+          @keyup.enter="handleSubmit"
         />
       </el-form-item>
       
@@ -34,6 +42,7 @@
           placeholder="請再次輸入密碼"
           :disabled="loading"
           show-password
+          @keyup.enter="handleSubmit"
         />
       </el-form-item>
     </el-form>

@@ -1,41 +1,58 @@
 <template>
-  <div class="test-connection">
-    <el-card>
-      <template #header>
-        <h3>Supabase 連接測試</h3>
-      </template>
+  <el-dialog
+    v-model="visible"
+    title="Supabase 連接測試"
+    width="500px"
+    :close-on-click-modal="true"
+    :close-on-press-escape="true"
+    :show-close="true"
+  >
+    <div class="test-section">
+      <el-button 
+        type="primary" 
+        @click="testConnection"
+        :loading="testing"
+      >
+        測試 Supabase 連接
+      </el-button>
       
-      <div class="test-section">
-        <el-button 
-          type="primary" 
-          @click="testConnection"
-          :loading="testing"
-        >
-          測試 Supabase 連接
-        </el-button>
-        
-        <div v-if="result" class="result">
-          <el-alert
-            :title="result.success ? '連接成功！' : '連接失敗'"
-            :type="result.success ? 'success' : 'error'"
-            :description="result.message"
-            show-icon
-          />
-        </div>
+      <div v-if="result" class="result">
+        <el-alert
+          :title="result.success ? '連接成功！' : '連接失敗'"
+          :type="result.success ? 'success' : 'error'"
+          :description="result.message"
+          show-icon
+        />
       </div>
-      
-      <div class="env-info">
-        <h4>環境變數狀態</h4>
-        <p><strong>Supabase URL:</strong> {{ supabaseUrl ? '✅ 已設置' : '❌ 未設置' }}</p>
-        <p><strong>Supabase Key:</strong> {{ supabaseKey ? '✅ 已設置' : '❌ 未設置' }}</p>
-      </div>
-    </el-card>
-  </div>
+    </div>
+    
+    <div class="env-info">
+      <h4>環境變數狀態</h4>
+      <p><strong>Supabase URL:</strong> {{ supabaseUrl ? '✅ 已設置' : '❌ 未設置' }}</p>
+      <p><strong>Supabase Key:</strong> {{ supabaseKey ? '✅ 已設置' : '❌ 未設置' }}</p>
+    </div>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { supabase } from '../lib/supabase'
+
+interface Props {
+  modelValue: boolean
+}
+
+interface Emits {
+  (e: 'update:modelValue', value: boolean): void
+}
+
+const props = defineProps<Props>()
+const emit = defineEmits<Emits>()
+
+const visible = computed({
+  get: () => props.modelValue,
+  set: (value) => emit('update:modelValue', value)
+})
 
 const testing = ref(false)
 const result = ref<{ success: boolean; message: string } | null>(null)
@@ -79,7 +96,7 @@ const testConnection = async () => {
 <style scoped>
 .test-connection {
   max-width: 600px;
-  margin: 20px auto;
+  margin: 80px auto 20px auto;
   padding: 20px;
 }
 

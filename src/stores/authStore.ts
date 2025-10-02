@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { supabase } from '../lib/supabase'
 import type { User } from '@supabase/supabase-js'
 
@@ -8,8 +8,16 @@ export const useAuthStore = () => {
   const error = ref<string | null>(null)
 
   // 計算屬性
-  const isAuthenticated = computed(() => !!user.value)
-  const userEmail = computed(() => user.value?.email || '')
+  const isAuthenticated = computed(() => {
+    const result = !!user.value
+    console.log('isAuthenticated computed:', result, 'user:', user.value?.email)
+    return result
+  })
+  const userEmail = computed(() => {
+    const result = user.value?.email || ''
+    console.log('userEmail computed:', result)
+    return result
+  })
 
   // 初始化認證狀態
   const initAuth = async () => {
@@ -26,15 +34,19 @@ export const useAuthStore = () => {
       supabase.auth.onAuthStateChange((event, session) => {
         console.log('Auth state changed:', event, session?.user?.email)
         console.log('Previous user:', user.value?.email)
-        user.value = session?.user || null
-        console.log('New user:', user.value?.email)
-        console.log('isAuthenticated:', !!user.value)
         
-        if (event === 'SIGNED_OUT') {
-          // 清除本地數據
-          localStorage.removeItem('bill-splitter-data')
-          console.log('Cleared local storage')
-        }
+        // 使用 nextTick 確保響應性更新
+        nextTick(() => {
+          user.value = session?.user || null
+          console.log('New user:', user.value?.email)
+          console.log('isAuthenticated:', !!user.value)
+          
+          if (event === 'SIGNED_OUT') {
+            // 清除本地數據
+            localStorage.removeItem('bill-splitter-data')
+            console.log('Cleared local storage')
+          }
+        })
       })
     } catch (err) {
       console.error('初始化認證失敗:', err)
