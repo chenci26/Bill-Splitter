@@ -164,6 +164,7 @@ const store = useExpenseStore()
 const expenses = computed(() => store.expenses)
 const people = computed(() => store.people)
 const categories = computed(() => store.categories)
+const currencies = computed(() => store.currencies)
 const statistics = computed(() => store.statistics)
 
 const statisticsData = computed(() => {
@@ -264,6 +265,11 @@ const importData = () => {
           ElMessage.error('無效的數據格式：缺少categories數組')
           return
         }
+        
+        if (!data.currencies || !Array.isArray(data.currencies)) {
+          ElMessage.error('無效的數據格式：缺少currencies數組')
+          return
+        }
 
         // 確認導入
         ElMessageBox.confirm(
@@ -284,6 +290,9 @@ const importData = () => {
           }
           if (data.categories) {
             store.categories = data.categories
+          }
+          if (data.currencies) {
+            store.currencies = data.currencies
           }
           
           // 保存到本地存儲
@@ -308,6 +317,7 @@ const exportData = () => {
     expenses: expenses.value,
     people: people.value,
     categories: categories.value,
+    currencies: currencies.value,
     statistics: statisticsData.value,
     categoryStatistics: categoryStatistics.value,
     summary: {

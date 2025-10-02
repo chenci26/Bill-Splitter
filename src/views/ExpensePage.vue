@@ -39,9 +39,14 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="amount" label="金額" width="100">
+        <el-table-column prop="amount" label="金額" width="120">
           <template #default="{ row }">
-            ${{ row.amount.toFixed(2) }}
+            <div class="amount-display">
+              <span class="original-amount" v-if="row.originalAmount && row.currency !== getDefaultCurrencyId()">
+                {{ getCurrencySymbol(row.currency) }}{{ row.originalAmount.toFixed(2) }}
+              </span>
+              <span class="twd-amount">NT${{ row.amount.toFixed(2) }}</span>
+            </div>
           </template>
         </el-table-column>
         <el-table-column prop="participants" label="參與人員" width="150">
@@ -103,12 +108,30 @@
           </el-select>
         </el-form-item>
         <el-form-item label="金額" required>
-          <el-input-number
-            v-model="formData.amount"
-            :min="0"
-            :precision="2"
-            style="width: 100%"
-          />
+          <div class="amount-input-group">
+            <el-input-number
+              v-model="formData.originalAmount"
+              :min="0"
+              :precision="2"
+              style="flex: 1; margin-right: 10px;"
+              @input="calculateAmount"
+            />
+            <el-select
+              v-model="formData.currency"
+              style="width: 120px;"
+              @change="calculateAmount"
+            >
+              <el-option
+                v-for="currency in currencies"
+                :key="currency.id"
+                :label="currency.symbol"
+                :value="currency.id"
+              />
+            </el-select>
+          </div>
+          <div class="twd-amount-display" v-if="formData.originalAmount && formData.currency">
+            <small>台幣金額：NT${{ formData.amount.toFixed(2) }}</small>
+          </div>
         </el-form-item>
         <el-form-item label="參與人員" required>
           <el-select
@@ -205,6 +228,53 @@
             </div>
           </div>
         </el-tab-pane>
+        <el-tab-pane label="幣別管理" name="currencies">
+          <div class="tag-management">
+            <div class="add-tag">
+              <el-input
+                v-model="newCurrencyName"
+                placeholder="輸入幣別名稱"
+                style="width: 120px; margin-right: 10px;"
+              />
+              <el-input
+                v-model="newCurrencySymbol"
+                placeholder="符號"
+                style="width: 80px; margin-right: 10px;"
+              />
+              <el-input-number
+                v-model="newCurrencyRate"
+                :min="0"
+                :precision="4"
+                placeholder="匯率"
+                style="width: 120px; margin-right: 10px;"
+              />
+              <el-button type="primary" @click="addCurrency">新增</el-button>
+            </div>
+            <div class="tag-list">
+              <div
+                v-for="currency in currencies"
+                :key="currency.id"
+                class="currency-item"
+              >
+                <el-tag
+                  closable
+                  @close="deleteCurrency(currency.id)"
+                  style="margin: 5px;"
+                >
+                  {{ currency.name }} ({{ currency.symbol }})
+                </el-tag>
+                <el-input-number
+                  :model-value="currency.rate"
+                  :min="0"
+                  :precision="4"
+                  size="small"
+                  style="width: 100px; margin-left: 10px;"
+                  @change="(value: number) => updateCurrencyRate(currency.id, value)"
+                />
+              </div>
+            </div>
+          </div>
+        </el-tab-pane>
       </el-tabs>
     </el-dialog>
 
@@ -222,7 +292,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { useExpenseStore, type ExpenseItem } from '../stores/expenseStore'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -238,22 +308,37 @@ const editingExpense = ref<ExpenseItem | null>(null)
 const newPersonName = ref('')
 const newCategoryName = ref('')
 const newCategoryColor = ref('#e3f2fd')
+const newCurrencyName = ref('')
+const newCurrencySymbol = ref('')
+const newCurrencyRate = ref(1)
 
 // 表單數據
 const formData = reactive({
   date: '',
   itemName: '',
   category: '',
+  originalAmount: 0,
   amount: 0,
+  currency: '1', // 默認台幣
   participants: [] as string[],
   payer: '',
   note: ''
+})
+
+// 初始化時計算金額
+watch(() => formData.originalAmount, () => {
+  calculateAmount()
+})
+
+watch(() => formData.currency, () => {
+  calculateAmount()
 })
 
 // 計算屬性
 const expenses = computed(() => store.expenses)
 const people = computed(() => store.people)
 const categories = computed(() => store.categories)
+const currencies = computed(() => store.currencies)
 
 // 方法
 const getCategoryColor = (categoryName: string) => {
@@ -273,12 +358,33 @@ const getCategoryTextColor = (categoryName: string) => {
   return '#ffffff' // 白色文字
 }
 
+const getCurrencySymbol = (currencyId: string) => {
+  const currency = currencies.value.find(c => c.id === currencyId)
+  return currency?.symbol || 'TWD'
+}
+
+const getDefaultCurrencyId = () => {
+  const defaultCurrency = currencies.value.find(c => c.isDefault)
+  return defaultCurrency?.id || '1'
+}
+
+const calculateAmount = () => {
+  const currency = currencies.value.find(c => c.id === formData.currency)
+  if (currency && formData.originalAmount) {
+    formData.amount = formData.originalAmount * currency.rate
+  } else {
+    formData.amount = formData.originalAmount || 0
+  }
+}
+
 const editExpense = (expense: ExpenseItem) => {
   editingExpense.value = expense
   formData.date = expense.date
   formData.itemName = expense.itemName
   formData.category = expense.category
+  formData.originalAmount = expense.originalAmount || expense.amount
   formData.amount = expense.amount
+  formData.currency = expense.currency
   formData.participants = [...expense.participants]
   formData.payer = expense.payer
   formData.note = expense.note
@@ -291,7 +397,7 @@ const deleteExpense = (id: string) => {
 
 const saveExpense = () => {
   if (!formData.date || !formData.itemName || !formData.category || 
-      !formData.amount || formData.participants.length === 0 || !formData.payer) {
+      !formData.originalAmount || formData.participants.length === 0 || !formData.payer) {
     ElMessage.error('請填寫所有必填欄位')
     return
   }
@@ -301,6 +407,8 @@ const saveExpense = () => {
     itemName: formData.itemName,
     category: formData.category,
     amount: formData.amount,
+    originalAmount: formData.originalAmount,
+    currency: formData.currency,
     participants: formData.participants,
     payer: formData.payer,
     note: formData.note
@@ -323,7 +431,9 @@ const resetForm = () => {
   formData.date = ''
   formData.itemName = ''
   formData.category = ''
+  formData.originalAmount = 0
   formData.amount = 0
+  formData.currency = '1'
   formData.participants = []
   formData.payer = ''
   formData.note = ''
@@ -358,6 +468,28 @@ const addCategory = () => {
 const deleteCategory = (id: string) => {
   store.deleteCategory(id)
   ElMessage.success('分類刪除成功')
+}
+
+const addCurrency = () => {
+  if (!newCurrencyName.value.trim() || !newCurrencySymbol.value.trim()) {
+    ElMessage.error('請輸入幣別名稱和符號')
+    return
+  }
+  store.addCurrency(newCurrencyName.value.trim(), newCurrencySymbol.value.trim(), newCurrencyRate.value)
+  newCurrencyName.value = ''
+  newCurrencySymbol.value = ''
+  newCurrencyRate.value = 1
+  ElMessage.success('幣別新增成功')
+}
+
+const deleteCurrency = (id: string) => {
+  store.deleteCurrency(id)
+  ElMessage.success('幣別刪除成功')
+}
+
+const updateCurrencyRate = (id: string, rate: number) => {
+  store.updateCurrencyRate(id, rate)
+  ElMessage.success('匯率更新成功')
 }
 </script>
 
@@ -463,6 +595,30 @@ const deleteCategory = (id: string) => {
   padding: 20px 0;
 }
 
+:deep(.el-tabs__item) {
+  color: #606266 !important;
+  background-color: transparent !important;
+}
+
+:deep(.el-tabs__item.is-active) {
+  color: #409EFF !important;
+  background-color: #f0f9ff !important;
+  border-bottom: 2px solid #409EFF !important;
+}
+
+:deep(.el-tabs__item:hover) {
+  color: #409EFF !important;
+  background-color: #f0f9ff !important;
+}
+
+:deep(.el-tabs__active-bar) {
+  background-color: #409EFF !important;
+}
+
+:deep(.el-tabs__nav-wrap::after) {
+  background-color: #e4e7ed !important;
+}
+
 .empty-state {
   padding: 40px 20px;
   text-align: center;
@@ -492,5 +648,38 @@ const deleteCategory = (id: string) => {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+}
+
+.currency-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.amount-input-group {
+  display: flex;
+  align-items: center;
+}
+
+.amount-display {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.original-amount {
+  font-size: 12px;
+  color: #666;
+}
+
+.twd-amount {
+  font-weight: bold;
+  color: #409EFF;
+}
+
+.twd-amount-display {
+  margin-top: 5px;
+  color: #409EFF;
+  font-size: 12px;
 }
 </style>

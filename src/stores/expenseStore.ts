@@ -6,7 +6,9 @@ export interface ExpenseItem {
   date: string
   itemName: string
   category: string
-  amount: number
+  amount: number // 台幣金額
+  originalAmount?: number // 原始金額
+  currency: string // 幣別ID
   participants: string[]
   payer: string
   averageAmount: number
@@ -24,6 +26,14 @@ export interface Category {
   color: string
 }
 
+export interface Currency {
+  id: string
+  name: string
+  symbol: string
+  rate: number // 對台幣的匯率
+  isDefault?: boolean
+}
+
 export const useExpenseStore = defineStore('expense', () => {
   // 狀態
   const expenses = ref<ExpenseItem[]>([])
@@ -39,6 +49,14 @@ export const useExpenseStore = defineStore('expense', () => {
     { id: '4', name: '門票', color: '#ffebee' },
     { id: '5', name: '飲食', color: '#f3e5f5' },
     { id: '6', name: '住宿', color: '#e1f5fe' }
+  ])
+
+  const currencies = ref<Currency[]>([
+    { id: '1', name: '台幣', symbol: 'TWD', rate: 1, isDefault: true },
+    { id: '2', name: '美元', symbol: 'USD', rate: 31.5 }, // 1 USD = 31.5 TWD
+    { id: '3', name: '日圓', symbol: 'JPY', rate: 0.21 }, // 1 JPY = 0.21 TWD (30000 JPY = 6300 TWD)
+    { id: '4', name: '歐元', symbol: 'EUR', rate: 34.2 }, // 1 EUR = 34.2 TWD
+    { id: '5', name: '韓圓', symbol: 'KRW', rate: 0.024 } // 1 KRW = 0.024 TWD
   ])
 
   // 計算屬性
@@ -152,12 +170,40 @@ export const useExpenseStore = defineStore('expense', () => {
     }
   }
 
+  const addCurrency = (name: string, symbol: string, rate: number) => {
+    const newCurrency: Currency = {
+      id: Date.now().toString(),
+      name,
+      symbol,
+      rate
+    }
+    currencies.value.push(newCurrency)
+    saveToLocalStorage()
+  }
+
+  const deleteCurrency = (id: string) => {
+    const index = currencies.value.findIndex(c => c.id === id)
+    if (index !== -1) {
+      currencies.value.splice(index, 1)
+      saveToLocalStorage()
+    }
+  }
+
+  const updateCurrencyRate = (id: string, rate: number) => {
+    const currency = currencies.value.find(c => c.id === id)
+    if (currency) {
+      currency.rate = rate
+      saveToLocalStorage()
+    }
+  }
+
   // 本地存儲
   const saveToLocalStorage = () => {
     localStorage.setItem('expenseData', JSON.stringify({
       expenses: expenses.value,
       people: people.value,
-      categories: categories.value
+      categories: categories.value,
+      currencies: currencies.value
     }))
   }
 
@@ -168,6 +214,7 @@ export const useExpenseStore = defineStore('expense', () => {
       expenses.value = parsed.expenses || []
       people.value = parsed.people || people.value
       categories.value = parsed.categories || categories.value
+      currencies.value = parsed.currencies || currencies.value
     }
   }
 
@@ -178,6 +225,7 @@ export const useExpenseStore = defineStore('expense', () => {
     expenses,
     people,
     categories,
+    currencies,
     statistics,
     addExpense,
     updateExpense,
@@ -186,6 +234,9 @@ export const useExpenseStore = defineStore('expense', () => {
     deletePerson,
     addCategory,
     deleteCategory,
+    addCurrency,
+    deleteCurrency,
+    updateCurrencyRate,
     saveToLocalStorage
   }
 })
