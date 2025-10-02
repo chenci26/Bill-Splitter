@@ -254,6 +254,16 @@ const importData = () => {
           ElMessage.error('無效的數據格式：缺少expenses數組')
           return
         }
+        
+        if (!data.people || !Array.isArray(data.people)) {
+          ElMessage.error('無效的數據格式：缺少people數組')
+          return
+        }
+        
+        if (!data.categories || !Array.isArray(data.categories)) {
+          ElMessage.error('無效的數據格式：缺少categories數組')
+          return
+        }
 
         // 確認導入
         ElMessageBox.confirm(
@@ -296,6 +306,8 @@ const importData = () => {
 const exportData = () => {
   const data = {
     expenses: expenses.value,
+    people: people.value,
+    categories: categories.value,
     statistics: statisticsData.value,
     categoryStatistics: categoryStatistics.value,
     summary: {
