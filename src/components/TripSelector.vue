@@ -86,7 +86,12 @@
         <div class="members-section">
           <div class="section-header">
             <strong>成員 ({{ currentTrip?.members?.length || 0 }} 人)</strong>
-            <el-button type="primary" size="small" @click="showInviteDialog = true">
+            <el-button 
+              v-if="isCreator"
+              type="primary" 
+              size="small" 
+              @click="showInviteDialog = true"
+            >
               邀請成員
             </el-button>
           </div>
@@ -94,7 +99,7 @@
             <el-tag 
               v-for="member in currentTrip?.members" 
               :key="member"
-              closable
+              :closable="isCreator"
               @close="removeMember(member)"
               style="margin: 5px;"
             >
@@ -153,6 +158,12 @@ const tripRules = {
 
 const currentTrip = computed(() => supabaseStore.currentTrip)
 const expenseCount = computed(() => supabaseStore.expenses?.length || 0)
+
+// 檢查當前用戶是否為旅程創建者
+const isCreator = computed(() => {
+  if (!currentTrip.value || !authStore.user) return false
+  return currentTrip.value.created_by === authStore.user.id
+})
 
 // 載入用戶的旅程列表
 const loadUserTrips = async () => {
@@ -247,6 +258,12 @@ const inviteMember = async () => {
     return
   }
   
+  // 只有創建者可以邀請成員
+  if (!isCreator.value) {
+    ElMessage.warning('只有旅程創建者可以邀請成員')
+    return
+  }
+  
   try {
     loading.value = true
     
@@ -291,6 +308,12 @@ const removeMember = async (memberEmail: string) => {
   if (!currentTrip.value) return
   
   try {
+    // 只有創建者可以移除成員
+    if (!isCreator.value) {
+      ElMessage.warning('只有旅程創建者可以移除成員')
+      return
+    }
+    
     // 不能移除創建者
     const { data: { user } } = await supabaseStore.supabase.auth.getUser()
     if (memberEmail === user?.email) {

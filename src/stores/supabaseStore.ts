@@ -343,6 +343,10 @@ export const useSupabaseStore = defineStore('supabase', () => {
       if (!currentTrip.value) throw new Error('請先選擇旅程')
 
       const newPerson = { id: Date.now().toString(), name }
+      // 確保 people.value 是數組
+      if (!Array.isArray(people.value)) {
+        people.value = []
+      }
       people.value = [...people.value, newPerson]
 
       // 更新旅程設置
@@ -371,6 +375,10 @@ export const useSupabaseStore = defineStore('supabase', () => {
       if (!currentTrip.value) throw new Error('請先選擇旅程')
 
       const newCategory = { id: Date.now().toString(), name, color }
+      // 確保 categories.value 是數組
+      if (!Array.isArray(categories.value)) {
+        categories.value = []
+      }
       categories.value = [...categories.value, newCategory]
 
       await updateTripSettings()
@@ -398,6 +406,10 @@ export const useSupabaseStore = defineStore('supabase', () => {
       if (!currentTrip.value) throw new Error('請先選擇旅程')
 
       const newCurrency = { id: Date.now().toString(), name, symbol, rate }
+      // 確保 currencies.value 是數組
+      if (!Array.isArray(currencies.value)) {
+        currencies.value = []
+      }
       currencies.value = [...currencies.value, newCurrency]
 
       await updateTripSettings()

@@ -59,8 +59,11 @@ CREATE POLICY "Users can view trips they are members of" ON trips
 CREATE POLICY "Users can create trips" ON trips
   FOR INSERT WITH CHECK (auth.uid()::text = created_by);
 
-CREATE POLICY "Trip creators can update trips" ON trips
-  FOR UPDATE USING (created_by = auth.uid()::text);
+CREATE POLICY "Trip members can update trips" ON trips
+  FOR UPDATE USING (
+    created_by = auth.uid()::text OR 
+    auth.email() = ANY(members)
+  );
 
 -- 費用表策略：只有旅程成員可以訪問
 CREATE POLICY "Trip members can view expenses" ON expenses
@@ -143,4 +146,5 @@ VITE_SUPABASE_ANON_KEY=your_anon_key_here
 - 旅程創建者可以邀請/移除成員
 - 所有成員都可以新增/編輯/刪除費用記錄
 - 費用記錄只能由創建者刪除（保護數據安全）
-- 旅程設置（人員、分類、幣別）的修改會即時同步給所有成員
+- **所有成員都可以管理標籤**（人員、分類、幣別）
+- 旅程設置的修改會即時同步給所有成員
