@@ -6,8 +6,8 @@
           <h1>旅遊分帳工具</h1>
           <el-tabs v-model="activeTab" @tab-change="handleTabChange">
             <el-tab-pane label="旅程管理" name="trip" />
-            <el-tab-pane label="分帳頁面" name="expense" />
-            <el-tab-pane label="統計頁面" name="statistics" />
+            <el-tab-pane label="分帳頁面" name="expense" :disabled="!hasTripSelected" />
+            <el-tab-pane label="統計頁面" name="statistics" :disabled="!hasTripSelected" />
           </el-tabs>
         </div>
         
@@ -42,11 +42,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import TripSelector from './TripSelector.vue'
 import ExpensePage from '../views/ExpensePage.vue'
 import StatisticsPage from '../views/StatisticsPage.vue'
 import { useAuthStore } from '../stores/authStore'
+import { useSupabaseStore } from '../stores/supabaseStore'
+import { ElMessage } from 'element-plus'
 
 interface Emits {
   (e: 'showLoginDialog'): void
@@ -56,11 +58,26 @@ interface Emits {
 const emit = defineEmits<Emits>()
 
 const authStore = useAuthStore()
+const supabaseStore = useSupabaseStore()
 const activeTab = ref('trip')
+
+// 檢查是否已選擇旅程
+const hasTripSelected = computed(() => !!supabaseStore.currentTrip)
 
 const handleTabChange = (tabName: string) => {
   activeTab.value = tabName
 }
+
+// 監聽旅程選擇狀態
+watch(hasTripSelected, (selected) => {
+  if (selected) {
+    // 選擇旅程後，自動切換到分帳頁面
+    activeTab.value = 'expense'
+  } else {
+    // 離開旅程後，自動切換回旅程管理
+    activeTab.value = 'trip'
+  }
+})
 
 // 切換測試連接顯示
 const toggleTestConnection = () => {
@@ -70,17 +87,12 @@ const toggleTestConnection = () => {
 // 手動登出
 const handleLogout = async () => {
   try {
-    console.log('App: 開始登出...')
     await authStore.signOut()
-    console.log('App: Supabase 登出完成，等待認證狀態更新...')
     
     // 等待一小段時間讓認證狀態監聽器更新
     await new Promise(resolve => setTimeout(resolve, 100))
-    
-    console.log('App: 當前認證狀態:', authStore.isAuthenticated)
-    console.log('App: 用戶已登出')
   } catch (error) {
-    console.error('App: 登出失敗:', error)
+    ElMessage.error('登出失敗')
   }
 }
 

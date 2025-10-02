@@ -292,7 +292,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import { useSupabaseStore, type ExpenseItem } from '../stores/supabaseStore'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -336,19 +336,19 @@ watch(() => formData.currency, () => {
 })
 
 // 計算屬性
-const expenses = store.expenses
-const people = store.people
-const categories = store.categories
-const currencies = store.currencies
+const expenses = computed(() => store.expenses)
+const people = computed(() => store.people)
+const categories = computed(() => store.categories)
+const currencies = computed(() => store.currencies)
 
 // 方法
 const getCategoryColor = (categoryName: string) => {
-  const category = categories.find(c => c.name === categoryName)
+  const category = categories.value.find(c => c.name === categoryName)
   return category?.color || '#e3f2fd'
 }
 
 const getCategoryTextColor = (categoryName: string) => {
-  const category = categories.find(c => c.name === categoryName)
+  const category = categories.value.find(c => c.name === categoryName)
   const color = category?.color || '#e3f2fd'
   
   // 根據背景色選擇文字顏色
@@ -360,17 +360,17 @@ const getCategoryTextColor = (categoryName: string) => {
 }
 
 const getCurrencySymbol = (currencyId: string) => {
-  const currency = currencies.find(c => c.id === currencyId)
+  const currency = currencies.value.find(c => c.id === currencyId)
   return currency?.symbol || 'TWD'
 }
 
 const getDefaultCurrencyId = () => {
-  const defaultCurrency = currencies.find(c => c.isDefault)
+  const defaultCurrency = currencies.value.find(c => c.isDefault)
   return defaultCurrency?.id || '1'
 }
 
 const calculateAmount = () => {
-  const currency = currencies.find(c => c.id === formData.currency)
+  const currency = currencies.value.find(c => c.id === formData.currency)
   if (currency && formData.originalAmount) {
     formData.amount = formData.originalAmount * currency.rate
   } else {
@@ -410,7 +410,7 @@ const deleteExpense = async (id: string) => {
         type: 'warning',
       }
     )
-    store.deleteExpense(id)
+    await store.deleteExpense(id)
     ElMessage.success('記錄已刪除')
   } catch {
     // 用戶取消刪除，不做任何操作
@@ -487,7 +487,7 @@ const deletePerson = async (id: string) => {
         type: 'warning',
       }
     )
-    store.deletePerson(id)
+    await store.deletePerson(id)
     ElMessage.success('人員刪除成功')
   } catch {
     // 用戶取消刪除，不做任何操作
@@ -520,7 +520,7 @@ const deleteCategory = async (id: string) => {
         type: 'warning',
       }
     )
-    store.deleteCategory(id)
+    await store.deleteCategory(id)
     ElMessage.success('分類刪除成功')
   } catch {
     // 用戶取消刪除，不做任何操作

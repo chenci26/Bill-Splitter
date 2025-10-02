@@ -161,11 +161,11 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 const store = useSupabaseStore()
 
 // 計算屬性
-const expenses = store.expenses
-const people = store.people
-const categories = store.categories
-const currencies = store.currencies
-const statistics = store.statistics
+const expenses = computed(() => store.expenses)
+const people = computed(() => store.people)
+const categories = computed(() => store.categories)
+const currencies = computed(() => store.currencies)
+const statistics = computed(() => store.statistics)
 
 const statisticsData = computed(() => {
   return Object.entries(statistics.value).map(([person, data]) => ({
@@ -280,30 +280,38 @@ const importData = () => {
             cancelButtonText: '取消',
             type: 'warning',
           }
-        ).then(() => {
-          // 導入數據
-          if (data.expenses) {
-            store.expenses = data.expenses
+        ).then(async () => {
+          try {
+            // 導入旅程設置（人員、分類、幣別）
+            if (data.people) {
+              store.people = data.people
+            }
+            if (data.categories) {
+              store.categories = data.categories
+            }
+            if (data.currencies) {
+              store.currencies = data.currencies
+            }
+            
+            // 更新旅程設置到資料庫
+            await (store as any).updateTripSettings()
+            
+            // 導入費用記錄到資料庫
+            if (data.expenses && Array.isArray(data.expenses)) {
+              for (const expense of data.expenses) {
+                await store.addExpense(expense)
+              }
+            }
+            
+            ElMessage.success('數據導入成功')
+          } catch (error) {
+            ElMessage.error('導入數據時發生錯誤')
           }
-          if (data.people) {
-            store.people = data.people
-          }
-          if (data.categories) {
-            store.categories = data.categories
-          }
-          if (data.currencies) {
-            store.currencies = data.currencies
-          }
-          
-          // 數據已同步到 Supabase，無需本地存儲
-          
-          ElMessage.success('數據導入成功')
         }).catch(() => {
           ElMessage.info('已取消導入')
         })
       } catch (error) {
         ElMessage.error('文件解析失敗，請檢查文件格式')
-        console.error('Import error:', error)
       }
     }
     reader.readAsText(file)

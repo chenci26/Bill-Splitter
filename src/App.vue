@@ -10,47 +10,24 @@ const showAuthDialog = ref(false)
 const showTestConnection = ref(false)
 
 onMounted(async () => {
-  console.log('初始化認證...')
   await authStore.initAuth()
   
-  console.log('認證狀態:', {
-    isAuthenticated: authStore.isAuthenticated,
-    user: authStore.user,
-    userEmail: authStore.userEmail
-  })
-  
-  // 如果用戶未登入，顯示登入對話框
   if (!authStore.isAuthenticated) {
-    console.log('用戶未登入，顯示登入對話框')
     showAuthDialog.value = true
-  } else {
-    console.log('用戶已登入，跳過登入對話框')
   }
 })
 
 // 監聽認證狀態變化
 watch(() => authStore.isAuthenticated, (isAuthenticated) => {
-  console.log('認證狀態變化:', isAuthenticated)
   if (!isAuthenticated) {
-    console.log('用戶登出，顯示登入對話框')
     showAuthDialog.value = true
   } else {
-    console.log('用戶登入，關閉登入對話框')
     showAuthDialog.value = false
   }
 })
 
 const handleAuthSuccess = () => {
-  console.log('認證成功，關閉對話框')
   showAuthDialog.value = false
-  
-  // 強制觸發響應性更新
-  setTimeout(() => {
-    console.log('認證成功後狀態:', {
-      isAuthenticated: authStore.isAuthenticated.value,
-      user: authStore.user.value?.email
-    })
-  }, 100)
 }
 
 // 切換測試連接顯示

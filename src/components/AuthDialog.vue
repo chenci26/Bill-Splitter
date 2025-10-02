@@ -188,7 +188,6 @@ const handleSubmit = async () => {
     emit('success')
     visible.value = false
   } catch (error: any) {
-    console.error('認證錯誤:', error)
     ElMessage.error(error.message || '操作失敗')
   } finally {
     loading.value = false

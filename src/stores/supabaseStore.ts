@@ -203,7 +203,6 @@ export const useSupabaseStore = defineStore('supabase', () => {
   // 載入旅程
   const loadTrip = async (tripId: string) => {
     try {
-      console.log('載入旅程:', tripId)
       loading.value = true
       error.value = null
 
@@ -213,28 +212,16 @@ export const useSupabaseStore = defineStore('supabase', () => {
         .eq('id', tripId)
         .single()
 
-      if (dbError) {
-        console.error('載入旅程資料庫錯誤:', dbError)
-        throw dbError
-      }
+      if (dbError) throw dbError
 
-      console.log('載入的旅程數據:', data)
       currentTrip.value = data
       people.value = data.settings?.people || []
       categories.value = data.settings?.categories || []
       currencies.value = data.settings?.currencies || []
 
-      console.log('設置的數據:', {
-        people: people.value,
-        categories: categories.value,
-        currencies: currencies.value
-      })
-
       // 載入費用記錄
       await loadExpenses(tripId)
-      console.log('旅程載入成功')
     } catch (err) {
-      console.error('載入旅程失敗:', err)
       error.value = err instanceof Error ? err.message : '載入旅程失敗'
       throw err
     } finally {
@@ -353,20 +340,14 @@ export const useSupabaseStore = defineStore('supabase', () => {
   // 添加人員
   const addPerson = async (name: string) => {
     try {
-      console.log('添加人員:', name)
-      console.log('當前旅程:', currentTrip.value?.id)
-      
       if (!currentTrip.value) throw new Error('請先選擇旅程')
 
       const newPerson = { id: Date.now().toString(), name }
-      people.value.push(newPerson)
-      console.log('本地人員列表:', people.value)
+      people.value = [...people.value, newPerson]
 
       // 更新旅程設置
       await updateTripSettings()
-      console.log('人員添加成功')
     } catch (err) {
-      console.error('添加人員失敗:', err)
       error.value = err instanceof Error ? err.message : '添加人員失敗'
       throw err
     }
@@ -375,7 +356,8 @@ export const useSupabaseStore = defineStore('supabase', () => {
   // 刪除人員
   const deletePerson = async (id: string) => {
     try {
-      people.value = people.value.filter(p => p.id !== id)
+      const newPeople = people.value.filter(p => p.id !== id)
+      people.value = newPeople
       await updateTripSettings()
     } catch (err) {
       error.value = err instanceof Error ? err.message : '刪除人員失敗'
@@ -389,7 +371,7 @@ export const useSupabaseStore = defineStore('supabase', () => {
       if (!currentTrip.value) throw new Error('請先選擇旅程')
 
       const newCategory = { id: Date.now().toString(), name, color }
-      categories.value.push(newCategory)
+      categories.value = [...categories.value, newCategory]
 
       await updateTripSettings()
     } catch (err) {
@@ -401,7 +383,8 @@ export const useSupabaseStore = defineStore('supabase', () => {
   // 刪除分類
   const deleteCategory = async (id: string) => {
     try {
-      categories.value = categories.value.filter(c => c.id !== id)
+      const newCategories = categories.value.filter(c => c.id !== id)
+      categories.value = newCategories
       await updateTripSettings()
     } catch (err) {
       error.value = err instanceof Error ? err.message : '刪除分類失敗'
@@ -415,7 +398,7 @@ export const useSupabaseStore = defineStore('supabase', () => {
       if (!currentTrip.value) throw new Error('請先選擇旅程')
 
       const newCurrency = { id: Date.now().toString(), name, symbol, rate }
-      currencies.value.push(newCurrency)
+      currencies.value = [...currencies.value, newCurrency]
 
       await updateTripSettings()
     } catch (err) {
@@ -427,7 +410,8 @@ export const useSupabaseStore = defineStore('supabase', () => {
   // 刪除幣別
   const deleteCurrency = async (id: string) => {
     try {
-      currencies.value = currencies.value.filter(c => c.id !== id)
+      const newCurrencies = currencies.value.filter(c => c.id !== id)
+      currencies.value = newCurrencies
       await updateTripSettings()
     } catch (err) {
       error.value = err instanceof Error ? err.message : '刪除幣別失敗'
@@ -452,17 +436,10 @@ export const useSupabaseStore = defineStore('supabase', () => {
   // 更新旅程設置
   const updateTripSettings = async () => {
     if (!currentTrip.value) {
-      console.log('沒有當前旅程，跳過設置更新')
       return
     }
-
+    
     try {
-      console.log('更新旅程設置:', currentTrip.value.id)
-      console.log('設置數據:', {
-        currencies: currencies.value,
-        categories: categories.value,
-        people: people.value
-      })
 
       const { error: dbError } = await supabase
         .from('trips')
@@ -475,10 +452,7 @@ export const useSupabaseStore = defineStore('supabase', () => {
         })
         .eq('id', currentTrip.value.id)
 
-      if (dbError) {
-        console.error('資料庫更新錯誤:', dbError)
-        throw dbError
-      }
+      if (dbError) throw dbError
 
       // 更新本地數據
       currentTrip.value.settings = {
@@ -486,10 +460,7 @@ export const useSupabaseStore = defineStore('supabase', () => {
         categories: categories.value,
         people: people.value
       }
-      
-      console.log('旅程設置更新成功')
     } catch (err) {
-      console.error('更新設置失敗:', err)
       error.value = err instanceof Error ? err.message : '更新設置失敗'
       throw err
     }
@@ -570,10 +541,12 @@ export const useSupabaseStore = defineStore('supabase', () => {
         (payload) => {
           // 更新旅程設置
           if (payload.new && currentTrip.value) {
-            currentTrip.value = payload.new as Trip
-            people.value = payload.new.settings?.people || []
-            categories.value = payload.new.settings?.categories || []
-            currencies.value = payload.new.settings?.currencies || []
+            const newTrip = payload.new as Trip
+            currentTrip.value = newTrip
+            // 創建新數組引用以確保響應式更新
+            people.value = [...(newTrip.settings?.people || [])]
+            categories.value = [...(newTrip.settings?.categories || [])]
+            currencies.value = [...(newTrip.settings?.currencies || [])]
           }
         }
       )
@@ -611,6 +584,7 @@ export const useSupabaseStore = defineStore('supabase', () => {
     addCurrency,
     deleteCurrency,
     updateCurrencyRate,
+    updateTripSettings,
     subscribeToExpenses,
     subscribeToTrip,
     unsubscribeAll
