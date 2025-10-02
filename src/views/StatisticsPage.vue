@@ -84,7 +84,7 @@
 
     <!-- 總結卡片 -->
     <el-row :gutter="20" class="summary-cards">
-      <el-col :span="8">
+      <el-col :xs="24" :sm="8" :md="8">
         <el-card class="summary-card">
           <div class="summary-content">
             <div class="summary-title">總支出</div>
@@ -94,7 +94,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="8">
+      <el-col :xs="24" :sm="8" :md="8">
         <el-card class="summary-card">
           <div class="summary-content">
             <div class="summary-title">參與人數</div>
@@ -104,7 +104,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="8">
+      <el-col :xs="24" :sm="8" :md="8">
         <el-card class="summary-card">
           <div class="summary-content">
             <div class="summary-title">項目總數</div>
@@ -154,11 +154,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useExpenseStore } from '../stores/expenseStore'
+import { useSupabaseStore } from '../stores/supabaseStore'
 import { Download, Upload } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
-const store = useExpenseStore()
+const store = useSupabaseStore()
 
 // 計算屬性
 const expenses = computed(() => store.expenses)
@@ -173,8 +173,8 @@ const statisticsData = computed(() => {
     totalSpent: data.totalSpent,
     totalPaid: data.totalPaid,
     balance: data.balance,
-    itemCount: data.items.length,
-    items: data.items
+    itemCount: (data as any).items.length,
+    items: (data as any).items
   }))
 })
 
@@ -280,31 +280,38 @@ const importData = () => {
             cancelButtonText: '取消',
             type: 'warning',
           }
-        ).then(() => {
-          // 導入數據
-          if (data.expenses) {
-            store.expenses = data.expenses
+        ).then(async () => {
+          try {
+            // 導入旅程設置（人員、分類、幣別）
+            if (data.people) {
+              store.people = data.people
+            }
+            if (data.categories) {
+              store.categories = data.categories
+            }
+            if (data.currencies) {
+              store.currencies = data.currencies
+            }
+            
+            // 更新旅程設置到資料庫
+            await (store as any).updateTripSettings()
+            
+            // 導入費用記錄到資料庫
+            if (data.expenses && Array.isArray(data.expenses)) {
+              for (const expense of data.expenses) {
+                await store.addExpense(expense)
+              }
+            }
+            
+            ElMessage.success('數據導入成功')
+          } catch (error) {
+            ElMessage.error('導入數據時發生錯誤')
           }
-          if (data.people) {
-            store.people = data.people
-          }
-          if (data.categories) {
-            store.categories = data.categories
-          }
-          if (data.currencies) {
-            store.currencies = data.currencies
-          }
-          
-          // 保存到本地存儲
-          store.saveToLocalStorage()
-          
-          ElMessage.success('數據導入成功')
         }).catch(() => {
           ElMessage.info('已取消導入')
         })
       } catch (error) {
         ElMessage.error('文件解析失敗，請檢查文件格式')
-        console.error('Import error:', error)
       }
     }
     reader.readAsText(file)
@@ -469,5 +476,88 @@ const exportData = () => {
 
 :deep(.el-collapse-item__content) {
   padding: 10px 0;
+}
+
+/* RWD 響應式設計 */
+@media (max-width: 768px) {
+  /* 統計卡片網格調整 */
+  .total-stats {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  /* 總結卡片調整 */
+  .summary-cards {
+    margin-bottom: 20px;
+  }
+  
+  .summary-cards .el-col {
+    margin-bottom: 12px;
+  }
+  
+  .summary-cards .el-col:last-child {
+    margin-bottom: 0;
+  }
+  
+  /* 表格水平滾動 */
+  :deep(.el-table) {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  :deep(.el-table__body-wrapper) {
+    overflow-x: auto;
+  }
+  
+  /* 匯入匯出按鈕調整 */
+  :deep(.el-card__header) {
+    padding: 12px;
+  }
+  
+  .import-export-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .import-export-buttons .el-button {
+    width: 100%;
+  }
+  
+  /* 項目明細調整 */
+  .item-detail {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .item-name {
+    font-size: 13px;
+  }
+  
+  .item-amount {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* 更緊湊的卡片 */
+  :deep(.el-card__body) {
+    padding: 10px;
+  }
+  
+  /* 統計數字調整 */
+  :deep(.el-statistic__head) {
+    font-size: 12px;
+  }
+  
+  :deep(.el-statistic__content) {
+    font-size: 16px;
+  }
+  
+  /* 摺疊面板調整 */
+  :deep(.el-collapse-item__header) {
+    font-size: 13px;
+  }
 }
 </style>

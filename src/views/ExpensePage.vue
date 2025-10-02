@@ -292,13 +292,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
-import { useExpenseStore, type ExpenseItem } from '../stores/expenseStore'
+import { ref, reactive, watch, computed } from 'vue'
+import { useSupabaseStore, type ExpenseItem } from '../stores/supabaseStore'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 
-const store = useExpenseStore()
+const store = useSupabaseStore()
 
 // 響應式數據
 const showAddDialog = ref(false)
@@ -322,6 +322,7 @@ const formData = reactive({
   currency: '1', // 默認台幣
   participants: [] as string[],
   payer: '',
+  averageAmount: 0,
   note: ''
 })
 
@@ -333,6 +334,10 @@ watch(() => formData.originalAmount, () => {
 watch(() => formData.currency, () => {
   calculateAmount()
 })
+
+watch(() => formData.participants, () => {
+  calculateAmount()
+}, { deep: true })
 
 // 計算屬性
 const expenses = computed(() => store.expenses)
@@ -375,6 +380,13 @@ const calculateAmount = () => {
   } else {
     formData.amount = formData.originalAmount || 0
   }
+  
+  // 計算平均金額
+  if (formData.amount && formData.participants.length > 0) {
+    formData.averageAmount = formData.amount / formData.participants.length
+  } else {
+    formData.averageAmount = 0
+  }
 }
 
 const editExpense = (expense: ExpenseItem) => {
@@ -402,7 +414,7 @@ const deleteExpense = async (id: string) => {
         type: 'warning',
       }
     )
-    store.deleteExpense(id)
+    await store.deleteExpense(id)
     ElMessage.success('記錄已刪除')
   } catch {
     // 用戶取消刪除，不做任何操作
@@ -425,6 +437,7 @@ const saveExpense = () => {
     currency: formData.currency,
     participants: formData.participants,
     payer: formData.payer,
+    averageAmount: formData.averageAmount,
     note: formData.note
   }
 
@@ -453,14 +466,18 @@ const resetForm = () => {
   formData.note = ''
 }
 
-const addPerson = () => {
+const addPerson = async () => {
   if (!newPersonName.value.trim()) {
     ElMessage.error('請輸入人員姓名')
     return
   }
-  store.addPerson(newPersonName.value.trim())
-  newPersonName.value = ''
-  ElMessage.success('人員新增成功')
+  try {
+    await store.addPerson(newPersonName.value.trim())
+    newPersonName.value = ''
+    ElMessage.success('人員新增成功')
+  } catch (err) {
+    ElMessage.error('人員新增失敗')
+  }
 }
 
 const deletePerson = async (id: string) => {
@@ -474,22 +491,26 @@ const deletePerson = async (id: string) => {
         type: 'warning',
       }
     )
-    store.deletePerson(id)
+    await store.deletePerson(id)
     ElMessage.success('人員刪除成功')
   } catch {
     // 用戶取消刪除，不做任何操作
   }
 }
 
-const addCategory = () => {
+const addCategory = async () => {
   if (!newCategoryName.value.trim()) {
     ElMessage.error('請輸入分類名稱')
     return
   }
-  store.addCategory(newCategoryName.value.trim(), newCategoryColor.value)
-  newCategoryName.value = ''
-  newCategoryColor.value = '#e3f2fd'
-  ElMessage.success('分類新增成功')
+  try {
+    await store.addCategory(newCategoryName.value.trim(), newCategoryColor.value)
+    newCategoryName.value = ''
+    newCategoryColor.value = '#e3f2fd'
+    ElMessage.success('分類新增成功')
+  } catch (err) {
+    ElMessage.error('分類新增失敗')
+  }
 }
 
 const deleteCategory = async (id: string) => {
@@ -503,23 +524,27 @@ const deleteCategory = async (id: string) => {
         type: 'warning',
       }
     )
-    store.deleteCategory(id)
+    await store.deleteCategory(id)
     ElMessage.success('分類刪除成功')
   } catch {
     // 用戶取消刪除，不做任何操作
   }
 }
 
-const addCurrency = () => {
+const addCurrency = async () => {
   if (!newCurrencyName.value.trim() || !newCurrencySymbol.value.trim()) {
     ElMessage.error('請輸入幣別名稱和符號')
     return
   }
-  store.addCurrency(newCurrencyName.value.trim(), newCurrencySymbol.value.trim(), newCurrencyRate.value)
-  newCurrencyName.value = ''
-  newCurrencySymbol.value = ''
-  newCurrencyRate.value = 1
-  ElMessage.success('幣別新增成功')
+  try {
+    await store.addCurrency(newCurrencyName.value.trim(), newCurrencySymbol.value.trim(), newCurrencyRate.value)
+    newCurrencyName.value = ''
+    newCurrencySymbol.value = ''
+    newCurrencyRate.value = 1
+    ElMessage.success('幣別新增成功')
+  } catch (err) {
+    ElMessage.error('幣別新增失敗')
+  }
 }
 
 const deleteCurrency = async (id: string) => {
@@ -533,16 +558,20 @@ const deleteCurrency = async (id: string) => {
         type: 'warning',
       }
     )
-    store.deleteCurrency(id)
+    await store.deleteCurrency(id)
     ElMessage.success('幣別刪除成功')
   } catch {
     // 用戶取消刪除，不做任何操作
   }
 }
 
-const updateCurrencyRate = (id: string, rate: number) => {
-  store.updateCurrencyRate(id, rate)
-  ElMessage.success('匯率更新成功')
+const updateCurrencyRate = async (id: string, rate: number) => {
+  try {
+    await store.updateCurrencyRate(id, rate)
+    ElMessage.success('匯率更新成功')
+  } catch (err) {
+    ElMessage.error('匯率更新失敗')
+  }
 }
 </script>
 
@@ -734,5 +763,89 @@ const updateCurrencyRate = (id: string, rate: number) => {
   margin-top: 5px;
   color: #409EFF;
   font-size: 12px;
+}
+
+/* RWD 響應式設計 */
+@media (max-width: 768px) {
+  /* 表格水平滾動 */
+  :deep(.el-table) {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  :deep(.el-table__body-wrapper) {
+    overflow-x: auto;
+  }
+  
+  /* 操作按鈕縮小間距 */
+  .action-buttons {
+    gap: 4px;
+    flex-direction: column;
+  }
+  
+  .action-buttons .el-button {
+    width: 100%;
+    margin: 0;
+  }
+  
+  /* 表單調整 */
+  .amount-input-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .amount-input-group .el-select {
+    width: 100%;
+  }
+  
+  /* 標籤列表調整 */
+  .tag-list {
+    gap: 8px;
+  }
+  
+  .currency-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .currency-item .el-input-number {
+    width: 100%;
+  }
+  
+  /* Dialog 內部表單 */
+  :deep(.el-dialog__body) {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  /* 更緊湊的佈局 */
+  .action-buttons {
+    min-height: 60px;
+  }
+  
+  .add-tag {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .add-tag .el-input {
+    width: 100%;
+  }
+  
+  .add-tag .el-button {
+    width: 100%;
+  }
+  
+  /* 讓表格可以左右滑動 */
+  :deep(.el-card__body) {
+    padding: 8px;
+    overflow-x: auto;
+  }
 }
 </style>
