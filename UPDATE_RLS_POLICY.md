@@ -32,7 +32,15 @@ CREATE POLICY "Trip members can update trips" ON trips
   );
 ```
 
-### 5. 驗證策略
+### 5. 添加刪除旅程策略
+執行以下 SQL 命令創建刪除策略，只允許創建者刪除旅程：
+
+```sql
+CREATE POLICY "Trip creators can delete trips" ON trips
+  FOR DELETE USING (created_by = auth.uid()::text);
+```
+
+### 6. 驗證策略
 執行以下查詢檢查策略是否正確創建：
 
 ```sql
@@ -49,26 +57,40 @@ FROM pg_policies
 WHERE tablename = 'trips';
 ```
 
-你應該看到：
-- `policyname`: `Trip members can update trips`
-- `cmd`: `UPDATE`
-- `qual`: 包含 `created_by` 和 `members` 的檢查邏輯
+你應該看到兩個策略：
+1. 更新策略：
+   - `policyname`: `Trip members can update trips`
+   - `cmd`: `UPDATE`
+   - `qual`: 包含 `created_by` 和 `members` 的檢查邏輯
+
+2. 刪除策略：
+   - `policyname`: `Trip creators can delete trips`
+   - `cmd`: `DELETE`
+   - `qual`: 只檢查 `created_by`
 
 ## 新的權限說明
 
 ### 更新後的權限
 - ✅ 旅程創建者可以更新旅程（包括標籤管理）
+- ✅ 旅程創建者可以刪除旅程
 - ✅ 所有旅程成員都可以更新旅程（包括標籤管理）
 - ✅ 只有成員才能看到和更新旅程
 - ✅ 非成員無法訪問或修改
 
 ### 具體功能
-所有成員都可以：
+
+**創建者專屬：**
+- 刪除整個旅程（包括所有費用記錄）
+- 邀請成員
+- 移除成員
+
+**所有成員都可以：**
 - 新增/刪除人員標籤
 - 新增/刪除分類標籤
 - 新增/刪除幣別標籤
 - 修改匯率
 - 查看和編輯費用記錄
+- 離開旅程
 
 ### 安全性
 - 所有操作都受 RLS 保護

@@ -70,9 +70,28 @@
       <template #header>
         <div class="card-header">
           <span>當前旅程：{{ currentTrip?.name }}</span>
-          <el-button type="danger" size="small" @click="leaveTrip">
-            離開旅程
-          </el-button>
+          <div class="header-buttons">
+            <el-button 
+              type="primary" 
+              size="small" 
+              @click="switchTrip"
+            >
+              切換旅程
+            </el-button>
+            <el-tooltip 
+              :content="isCreator ? '刪除此旅程及所有數據' : '只有旅程創建者可以刪除旅程'"
+              placement="bottom"
+            >
+              <el-button 
+                type="danger" 
+                size="small" 
+                :disabled="!isCreator"
+                @click="deleteTrip"
+              >
+                刪除旅程
+              </el-button>
+            </el-tooltip>
+          </div>
         </div>
       </template>
       
@@ -232,17 +251,70 @@ const selectTrip = async (trip: Trip) => {
   }
 }
 
-// 離開旅程
-const leaveTrip = async () => {
+// 切換旅程
+const switchTrip = () => {
+  // 取消所有訂閱
+  supabaseStore.unsubscribeAll()
+  
+  // 清空當前旅程
+  supabaseStore.currentTrip = null
+  supabaseStore.expenses = []
+  
+  ElMessage.success('已返回旅程列表')
+}
+
+// 刪除旅程
+const deleteTrip = async () => {
+  if (!currentTrip.value) return
+  
   try {
+    // 只有創建者可以刪除旅程
+    if (!isCreator.value) {
+      ElMessage.warning('只有旅程創建者可以刪除旅程')
+      return
+    }
+    
+    // 確認刪除
+    await ElMessageBox.confirm(
+      `確定要刪除旅程「${currentTrip.value.name}」嗎？此操作無法復原，所有相關的費用記錄也會被刪除。`,
+      '刪除旅程',
+      {
+        confirmButtonText: '確定刪除',
+        cancelButtonText: '取消',
+        type: 'error',
+        buttonSize: 'default'
+      }
+    )
+    
+    loading.value = true
+    
+    const tripId = currentTrip.value.id
+    
+    // 刪除旅程（Supabase 會自動級聯刪除相關的費用記錄）
+    const { error } = await supabaseStore.supabase
+      .from('trips')
+      .delete()
+      .eq('id', tripId)
+    
+    if (error) throw error
+    
     // 取消所有訂閱
     supabaseStore.unsubscribeAll()
     
+    // 清空當前旅程和費用
     supabaseStore.currentTrip = null
     supabaseStore.expenses = []
-    ElMessage.success('已離開旅程')
-  } catch (err) {
-    ElMessage.error('離開旅程失敗')
+    
+    // 重新載入旅程列表
+    await loadUserTrips()
+    
+    ElMessage.success('旅程已刪除')
+  } catch (err: any) {
+    if (err !== 'cancel') {
+      ElMessage.error('刪除旅程失敗')
+    }
+  } finally {
+    loading.value = false
   }
 }
 
@@ -471,5 +543,17 @@ watch(() => authStore.isAuthenticated, (isAuthenticated) => {
   background-color: #f5f7fa;
   border-radius: 4px;
   min-height: 40px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 </style>

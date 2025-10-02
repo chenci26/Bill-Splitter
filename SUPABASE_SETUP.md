@@ -65,6 +65,9 @@ CREATE POLICY "Trip members can update trips" ON trips
     auth.email() = ANY(members)
   );
 
+CREATE POLICY "Trip creators can delete trips" ON trips
+  FOR DELETE USING (created_by = auth.uid()::text);
+
 -- 費用表策略：只有旅程成員可以訪問
 CREATE POLICY "Trip members can view expenses" ON expenses
   FOR SELECT USING (
