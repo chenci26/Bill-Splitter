@@ -343,12 +343,12 @@ const currencies = store.currencies
 
 // 方法
 const getCategoryColor = (categoryName: string) => {
-  const category = categories.value.find(c => c.name === categoryName)
+  const category = categories.find(c => c.name === categoryName)
   return category?.color || '#e3f2fd'
 }
 
 const getCategoryTextColor = (categoryName: string) => {
-  const category = categories.value.find(c => c.name === categoryName)
+  const category = categories.find(c => c.name === categoryName)
   const color = category?.color || '#e3f2fd'
   
   // 根據背景色選擇文字顏色
@@ -360,17 +360,17 @@ const getCategoryTextColor = (categoryName: string) => {
 }
 
 const getCurrencySymbol = (currencyId: string) => {
-  const currency = currencies.value.find(c => c.id === currencyId)
+  const currency = currencies.find(c => c.id === currencyId)
   return currency?.symbol || 'TWD'
 }
 
 const getDefaultCurrencyId = () => {
-  const defaultCurrency = currencies.value.find(c => c.isDefault)
+  const defaultCurrency = currencies.find(c => c.isDefault)
   return defaultCurrency?.id || '1'
 }
 
 const calculateAmount = () => {
-  const currency = currencies.value.find(c => c.id === formData.currency)
+  const currency = currencies.find(c => c.id === formData.currency)
   if (currency && formData.originalAmount) {
     formData.amount = formData.originalAmount * currency.rate
   } else {
