@@ -22,34 +22,25 @@ export interface Trip {
 }
 
 // 資料庫記錄轉換函數
-const dbToExpense = (dbRecord: any): ExpenseItem => ({
-  id: dbRecord.id,
-  date: dbRecord.date,
-  itemName: dbRecord.item_name,
-  category: dbRecord.category,
-  amount: dbRecord.amount,
-  originalAmount: dbRecord.original_amount,
-  currency: dbRecord.currency,
-  participants: dbRecord.participants,
-  payer: dbRecord.payer,
-  averageAmount: dbRecord.average_amount,
-  note: dbRecord.note
-})
-
-const expenseToDb = (expense: ExpenseItem) => ({
-  id: expense.id,
-  trip_id: currentTrip.value?.id || '',
-  date: expense.date,
-  item_name: expense.itemName,
-  category: expense.category,
-  amount: expense.amount,
-  original_amount: expense.originalAmount,
-  currency: expense.currency,
-  participants: expense.participants,
-  payer: expense.payer,
-  average_amount: expense.averageAmount,
-  note: expense.note
-})
+const dbToExpense = (dbRecord: any): ExpenseItem => {
+  const participants = dbRecord.participants || []
+  const amount = dbRecord.amount || 0
+  const averageAmount = dbRecord.average_amount || (participants.length > 0 ? amount / participants.length : 0)
+  
+  return {
+    id: dbRecord.id,
+    date: dbRecord.date,
+    itemName: dbRecord.item_name,
+    category: dbRecord.category,
+    amount,
+    originalAmount: dbRecord.original_amount,
+    currency: dbRecord.currency,
+    participants,
+    payer: dbRecord.payer,
+    averageAmount,
+    note: dbRecord.note
+  }
+}
 
 export const useSupabaseStore = defineStore('supabase', () => {
   // 響應式數據
@@ -241,9 +232,34 @@ export const useSupabaseStore = defineStore('supabase', () => {
       if (dbError) throw dbError
 
       expenses.value = (data || []).map(dbToExpense)
+      
+      // 修復已有資料的 averageAmount（如果為 0 或 null）
+      await fixExistingAverageAmounts()
     } catch (err) {
       error.value = err instanceof Error ? err.message : '載入費用記錄失敗'
       throw err
+    }
+  }
+  
+  // 修復已有資料的平均金額
+  const fixExistingAverageAmounts = async () => {
+    try {
+      const needsUpdate = expenses.value.filter(expense => 
+        !expense.averageAmount && expense.participants.length > 0
+      )
+      
+      for (const expense of needsUpdate) {
+        const correctAverage = expense.amount / expense.participants.length
+        await supabase
+          .from('expenses')
+          .update({ average_amount: correctAverage })
+          .eq('id', expense.id)
+        
+        // 更新本地資料
+        expense.averageAmount = correctAverage
+      }
+    } catch (err) {
+      // 靜默失敗，不影響主流程
     }
   }
 

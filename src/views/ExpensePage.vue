@@ -335,6 +335,10 @@ watch(() => formData.currency, () => {
   calculateAmount()
 })
 
+watch(() => formData.participants, () => {
+  calculateAmount()
+}, { deep: true })
+
 // 計算屬性
 const expenses = computed(() => store.expenses)
 const people = computed(() => store.people)
