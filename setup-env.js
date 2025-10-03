@@ -1,8 +1,8 @@
 // 設置環境變數的腳本
 import fs from 'fs'
 
-const envContent = `VITE_SUPABASE_URL=https://xxxxxxx.com
-VITE_SUPABASE_ANON_KEY=eyasdsadsadsadsadsadsadsadasdsadasasdsadsadasdsadsadsadqwedsdadsadsaJhaWplb3Jrd3R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MDE0NTgsImV4cCI6MjA3NDk3NzQ1OH0.2y99alJGrjNwutxLXOBzNR1csy0RZRU3T2vL5e49ASY`
+const envContent = `VITE_SUPABASE_URL=https://supabase.com
+VITE_SUPABASE_ANON_KEY=e1231231231321231321231231231321321231321321231321231231231231231321131321321231323`
 
 fs.writeFileSync('.env', envContent)
 console.log('✅ 環境變數文件已創建 (.env)')
